@@ -72,7 +72,7 @@ This merges all `parts/*.json` files (sorted by filename) into `AzureArc-Compreh
 
 ## Disclaimer
 
-This project is **not** an official Microsoft product or deliverable. It is an independent, community-driven effort provided **"as-is"** without warranty of any kind, express or implied. Microsoft does not endorse, support, or assume responsibility for this workbook or its contents.
+This is a **personal repository** maintained independently. It is **not** an official product or deliverable of any vendor. It is provided **"as-is"** without warranty of any kind, express or implied. No vendor endorses, supports, or assumes responsibility for this workbook or its contents.
 
 Use at your own risk. The authors and contributors accept no liability for any damage, data loss, or costs arising from the use of this workbook. Always validate queries and configurations in a non-production environment before deploying to production.
 
