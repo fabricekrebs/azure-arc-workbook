@@ -1,0 +1,129 @@
+[
+  {
+    "type": 12,
+    "content": {
+      "version": "NotebookGroup/1.0",
+      "groupType": "editable",
+      "items": [
+        {
+          "type": 1,
+          "content": {
+            "json": "## Linux Server Details\nDetailed inventory of all Arc-enabled Linux Servers including OS distribution, hardware, and connectivity."
+          },
+          "name": "linux-header"
+        },
+        {
+          "type": 9,
+          "content": {
+            "version": "KqlParameterItem/1.0",
+            "crossComponentResources": ["{Subscriptions}"],
+            "parameters": [
+              {
+                "id": "c3a82c40-0004-4a00-8000-000000000001",
+                "version": "KqlParameterItem/1.0",
+                "name": "LinuxServerStatus",
+                "label": "Server Status",
+                "type": 2,
+                "multiSelect": true,
+                "quote": "'",
+                "delimiter": ",",
+                "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend ServerStatus = tostring(properties.status)\n| distinct ServerStatus",
+                "crossComponentResources": ["{Subscriptions}"],
+                "typeSettings": {
+                  "additionalResourceOptions": ["value::all"],
+                  "showDefault": false
+                },
+                "defaultValue": "value::all",
+                "queryType": 1,
+                "resourceType": "microsoft.resourcegraph/resources"
+              }
+            ],
+            "style": "pills",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          },
+          "name": "linux-params"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend ServerStatus = tostring(properties.status)\n| where ServerStatus in ({LinuxServerStatus})\n| extend coreCount = toint(properties.detectedProperties.coreCount)\n| extend osSku = tostring(properties.osSku)\n| summarize TotalCores = sum(coreCount) by osSku\n| order by TotalCores desc",
+            "size": 3,
+            "title": "Cores by Linux OS",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart"
+          },
+          "customWidth": "50",
+          "name": "linux-cores-chart"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend ServerStatus = tostring(properties.status)\n| where ServerStatus in ({LinuxServerStatus})\n| extend osSku = tostring(properties.osSku)\n| summarize ServerCount = count() by osSku\n| order by ServerCount desc",
+            "size": 3,
+            "title": "Linux OS Distribution",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "customWidth": "50",
+          "name": "linux-os-chart"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend ServerStatus = tostring(properties.status)\n| where ServerStatus in ({LinuxServerStatus})\n| extend Cores = toint(properties.detectedProperties.logicalCoreCount)\n| extend TotalPhysicalMemory = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\n| extend osSku = tostring(properties.osSku)\n| extend osVersion = tostring(properties.osVersion)\n| extend agentVersion = tostring(properties.agentVersion)\n| extend Manufacturer = tostring(properties.detectedProperties.manufacturer)\n| extend Model = tostring(properties.detectedProperties.model)\n| extend Domain = tostring(properties.domainName)\n| extend FQDN = tostring(properties.machineFqdn)\n| join kind=leftouter (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| project Name = name, subscriptionName, resourceGroup, osSku, osVersion, ServerStatus, Cores, ['Memory (GB)'] = TotalPhysicalMemory, agentVersion, Manufacturer, Model, Domain, FQDN, location\n| order by Name asc",
+            "size": 0,
+            "title": "Linux Server Inventory",
+            "showAnalytics": true,
+            "showExportToExcel": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "gridSettings": {
+              "formatters": [
+                {
+                  "columnMatch": "Name",
+                  "formatter": 13,
+                  "formatOptions": {
+                    "linkTarget": "Resource",
+                    "linkIsContextBlade": true,
+                    "showIcon": true
+                  }
+                },
+                {
+                  "columnMatch": "ServerStatus",
+                  "formatter": 18,
+                  "formatOptions": {
+                    "thresholdsOptions": "icons",
+                    "thresholdsGrid": [
+                      { "operator": "==", "thresholdValue": "Connected", "representation": "success", "text": "{0}" },
+                      { "operator": "==", "thresholdValue": "Disconnected", "representation": "2", "text": "{0}" },
+                      { "operator": "==", "thresholdValue": "Expired", "representation": "4", "text": "{0}" },
+                      { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }
+                    ]
+                  }
+                }
+              ],
+              "rowLimit": 2000,
+              "filter": true
+            }
+          },
+          "name": "linux-inventory-grid"
+        }
+      ]
+    },
+    "conditionalVisibility": {
+      "parameterName": "selectedTab",
+      "comparison": "isEqualTo",
+      "value": "linuxservers"
+    },
+    "name": "tab-linuxservers"
+  }
+]

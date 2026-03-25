@@ -1,0 +1,274 @@
+[
+  {
+    "type": 12,
+    "content": {
+      "version": "NotebookGroup/1.0",
+      "groupType": "editable",
+      "items": [
+        {
+          "type": 1,
+          "content": {
+            "json": "## SQL Servers, Databases & Arc Benefits\nSQL Server instances registered via Azure Arc, database inventory, and Arc capability tracking."
+          },
+          "name": "sql-header"
+        },
+        {
+          "type": 11,
+          "content": {
+            "version": "LinkItem/1.0",
+            "style": "tabs",
+            "links": [
+              { "id": "sql-overview", "cellValue": "sqlSubTab", "linkTarget": "parameter", "linkLabel": "SQL Overview", "subTarget": "sqlOverview", "style": "link" },
+              { "id": "sql-databases", "cellValue": "sqlSubTab", "linkTarget": "parameter", "linkLabel": "Databases", "subTarget": "sqlDatabases", "style": "link" },
+              { "id": "sql-defender", "cellValue": "sqlSubTab", "linkTarget": "parameter", "linkLabel": "Defender for SQL", "subTarget": "sqlDefender", "style": "link" },
+              { "id": "sql-bpaben", "cellValue": "sqlSubTab", "linkTarget": "parameter", "linkLabel": "BPA", "subTarget": "sqlBpa", "style": "link" },
+              { "id": "sql-perf", "cellValue": "sqlSubTab", "linkTarget": "parameter", "linkLabel": "Performance", "subTarget": "sqlPerf", "style": "link" }
+            ]
+          },
+          "name": "sql-subtabs"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| extend version = tostring(properties.version)\n| extend edition = tostring(properties.edition)\n| extend containerId = tolower(tostring(properties.containerResourceId))\n| extend patchLevel = tostring(properties.patchLevel)\n| extend productId = tostring(properties.productId)\n| extend vCores = tostring(properties.vCores)\n| extend instanceName = name\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines'\n    | extend machineId = tolower(id)\n    | extend osSku = tostring(properties.osSku)\n    | extend hostType = iff(tostring(properties.detectedProperties.model) contains 'Virtual', 'Virtual Machine', 'Physical Machine')\n    | project machineId, machineName = name, osSku, hostType\n) on $left.containerId == $right.machineId\n| join kind=leftouter (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| extend licenseType = tostring(properties.licenseType)\n| extend currentVersion = tostring(properties.currentVersion)\n| project instanceName, subscriptionName, resourceGroup, machineName, version, edition, patchLevel, vCores, licenseType, currentVersion, osSku, hostType, location\n| order by instanceName asc",
+                  "size": 0,
+                  "title": "SQL Server Instances",
+                  "showExportToExcel": true,
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": {
+                    "formatters": [
+                      { "columnMatch": "instanceName", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } },
+                      { "columnMatch": "edition", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Enterprise", "representation": "Sev0", "text": "{0}" }, { "operator": "==", "thresholdValue": "Standard", "representation": "Sev3", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "Sev4", "text": "{0}" }] } }
+                    ],
+                    "rowLimit": 2000,
+                    "filter": true
+                  }
+                },
+                "name": "sql-instances-grid"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| extend version = tostring(properties.version)\n| extend edition = tostring(properties.edition)\n| summarize Count = count() by version, edition\n| order by version asc, edition asc",
+                  "size": 0,
+                  "title": "SQL Instances by Version & Edition",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "barchart"
+                },
+                "name": "sql-version-edition-chart"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "sqlSubTab", "comparison": "isEqualTo", "value": "sqlOverview" },
+          "name": "sql-overview-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances/databases'\n| extend compatibilityLevel = tostring(properties.compatibilityLevel)\n| summarize Databases = count() by compatibilityLevel",
+                  "size": 3,
+                  "title": "Databases by Compatibility Level",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "piechart",
+                  "chartSettings": { "showMetrics": false, "showLegend": true }
+                },
+                "customWidth": "33",
+                "name": "sql-db-compat"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances/databases'\n| extend recoveryMode = tostring(properties.recoveryMode)\n| summarize Databases = count() by recoveryMode",
+                  "size": 3,
+                  "title": "Databases by Recovery Model",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "piechart",
+                  "chartSettings": { "showMetrics": false, "showLegend": true }
+                },
+                "customWidth": "33",
+                "name": "sql-db-recovery"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances/databases'\n| extend lastFullBackup = iff(isnull(properties.backupInformation.lastFullBackup), 'False', 'True')\n| summarize Databases = count() by lastFullBackup",
+                  "size": 3,
+                  "title": "Databases by Full Backup Status",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "piechart",
+                  "chartSettings": { "showMetrics": false, "showLegend": true, "seriesLabelSettings": [{ "seriesName": "True", "color": "green" }, { "seriesName": "False", "color": "redBright" }] }
+                },
+                "customWidth": "33",
+                "name": "sql-db-backup"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances/databases'\n| extend compatibilityLevel = tostring(properties.compatibilityLevel)\n| extend lastFullBackup = properties.backupInformation.lastFullBackup\n| extend lastLogBackup = properties.backupInformation.lastLogBackup\n| extend Instance = split(id, '/databases')[0]\n| project Instance, Database = name, lastFullBackup = format_datetime(todatetime(lastFullBackup), 'yyyy-MM-dd HH:mm:ss'), lastLogBackup = format_datetime(todatetime(lastLogBackup), 'yyyy-MM-dd HH:mm:ss'), compatibilityLevel, recoveryMode = tostring(properties.recoveryMode)",
+                  "size": 0,
+                  "title": "Database Backup State Detail",
+                  "showExportToExcel": true,
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": {
+                    "formatters": [
+                      { "columnMatch": "Instance", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }
+                    ],
+                    "rowLimit": 1000,
+                    "filter": true
+                  }
+                },
+                "name": "sql-db-detail-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "sqlSubTab", "comparison": "isEqualTo", "value": "sqlDatabases" },
+          "name": "sql-databases-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Defender for SQL\nSQL Server instances with Microsoft Defender for SQL enabled via security assessments." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| extend instanceId = tolower(id)\n| join kind=leftouter (\n    securityresources\n    | where type == 'microsoft.security/assessments'\n    | where properties.resourceDetails.Source == 'Azure'\n    | extend resourceId = tolower(tostring(properties.resourceDetails.Id))\n    | where resourceId contains 'sqlserverinstances'\n    | distinct resourceId\n    | extend hasDefender = true\n) on $left.instanceId == $right.resourceId\n| extend Status = iff(isnotnull(hasDefender), 'Protected', 'Not Protected')\n| summarize count() by Status",
+                  "size": 3, "title": "Defender for SQL Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"], "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Protected", "color": "green" }, { "seriesName": "Not Protected", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "sql-defender-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| extend instanceId = tolower(id)\n| extend version = tostring(properties.version)\n| extend edition = tostring(properties.edition)\n| join kind=leftouter (\n    securityresources\n    | where type == 'microsoft.security/assessments'\n    | where properties.resourceDetails.Source == 'Azure'\n    | extend resourceId = tolower(tostring(properties.resourceDetails.Id))\n    | where resourceId contains 'sqlserverinstances'\n    | distinct resourceId\n    | extend hasDefender = true\n) on $left.instanceId == $right.resourceId\n| extend DefenderStatus = iff(isnotnull(hasDefender), 'Protected', 'Not Protected')\n| project Name = name, resourceGroup, version, edition, DefenderStatus\n| order by DefenderStatus desc, Name asc",
+                  "size": 0, "title": "SQL Instance Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "DefenderStatus", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Protected", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "sql-defender-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "sqlSubTab", "comparison": "isEqualTo", "value": "sqlDefender" },
+          "name": "sql-defender-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Best Practices Assessment\nSQL instances with BPA configured for proactive configuration health checks." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| extend bpaEnabled = tostring(properties.migration.assessment.enabled)\n| extend Status = iff(bpaEnabled == 'true', 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "BPA Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"], "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "sql-bpa-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| extend bpaEnabled = tostring(properties.migration.assessment.enabled)\n| extend BPA = iff(bpaEnabled == 'true', 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, version = tostring(properties.version), edition = tostring(properties.edition), BPA\n| order by BPA desc, Name asc",
+                  "size": 0, "title": "SQL Instance Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "BPA", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "sql-bpa-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "sqlSubTab", "comparison": "isEqualTo", "value": "sqlBpa" },
+          "name": "sql-bpa-ben-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Performance Monitoring\nSQL instances with Azure Monitor Agent configured for performance data collection." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| extend monitoringEnabled = tostring(properties.monitoring.enabled)\n| extend Status = iff(monitoringEnabled == 'true', 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "Performance Monitoring Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"], "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "sql-perf-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| extend monitoringEnabled = tostring(properties.monitoring.enabled)\n| extend Performance = iff(monitoringEnabled == 'true', 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, version = tostring(properties.version), edition = tostring(properties.edition), Performance\n| order by Performance desc, Name asc",
+                  "size": 0, "title": "SQL Instance Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "Performance", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "sql-perf-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "sqlSubTab", "comparison": "isEqualTo", "value": "sqlPerf" },
+          "name": "sql-perf-group"
+        }
+      ]
+    },
+    "conditionalVisibility": {
+      "parameterName": "selectedTab",
+      "comparison": "isEqualTo",
+      "value": "sqlservers"
+    },
+    "name": "tab-sqlservers"
+  }
+]

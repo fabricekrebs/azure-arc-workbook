@@ -1,0 +1,483 @@
+[
+  {
+    "type": 12,
+    "content": {
+      "version": "NotebookGroup/1.0",
+      "groupType": "editable",
+      "items": [
+        {
+          "type": 1,
+          "content": {
+            "json": "## Windows Arc Benefits\nTrack which Arc capabilities are configured across your Windows servers. Each tab shows configured vs. unconfigured servers for a specific capability."
+          },
+          "name": "winben-header"
+        },
+        {
+          "type": 11,
+          "content": {
+            "version": "LinkItem/1.0",
+            "style": "tabs",
+            "links": [
+              { "id": "wb-overview", "cellValue": "winBenTab", "linkTarget": "parameter", "linkLabel": "Overview", "subTarget": "wbOverview", "style": "link" },
+              { "id": "wb-update", "cellValue": "winBenTab", "linkTarget": "parameter", "linkLabel": "Update Manager", "subTarget": "wbUpdate", "style": "link" },
+              { "id": "wb-defender", "cellValue": "winBenTab", "linkTarget": "parameter", "linkLabel": "Defender", "subTarget": "wbDefender", "style": "link" },
+              { "id": "wb-inventory", "cellValue": "winBenTab", "linkTarget": "parameter", "linkLabel": "Inventory", "subTarget": "wbInventory", "style": "link" },
+              { "id": "wb-guestconfig", "cellValue": "winBenTab", "linkTarget": "parameter", "linkLabel": "Guest Config", "subTarget": "wbGuestConfig", "style": "link" },
+              { "id": "wb-monitoring", "cellValue": "winBenTab", "linkTarget": "parameter", "linkLabel": "Monitoring", "subTarget": "wbMonitoring", "style": "link" },
+              { "id": "wb-tagging", "cellValue": "winBenTab", "linkTarget": "parameter", "linkLabel": "Tagging", "subTarget": "wbTagging", "style": "link" },
+              { "id": "wb-wac", "cellValue": "winBenTab", "linkTarget": "parameter", "linkLabel": "WAC", "subTarget": "wbWac", "style": "link" },
+              { "id": "wb-hotpatch", "cellValue": "winBenTab", "linkTarget": "parameter", "linkLabel": "Hotpatching", "subTarget": "wbHotpatch", "style": "link" },
+              { "id": "wb-changetrack", "cellValue": "winBenTab", "linkTarget": "parameter", "linkLabel": "Change Tracking", "subTarget": "wbChangeTrack", "style": "link" },
+              { "id": "wb-keyvault", "cellValue": "winBenTab", "linkTarget": "parameter", "linkLabel": "Key Vault", "subTarget": "wbKeyVault", "style": "link" },
+              { "id": "wb-hybridworker", "cellValue": "winBenTab", "linkTarget": "parameter", "linkLabel": "Hybrid Workers", "subTarget": "wbHybridWorker", "style": "link" }
+            ]
+          },
+          "name": "winben-subtabs"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              {
+                "type": 1,
+                "content": { "json": "### Benefits Overview\nSummary of all Windows Arc capabilities across your estate." }
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | extend extType = tostring(properties.type)\n    | summarize extensions = make_set(extType) by parentId\n) on $left.machineId == $right.parentId\n| extend hasAMA = iff(isnotempty(extensions) and extensions has 'AzureMonitorWindowsAgent', 1, 0)\n| extend hasDefender = iff(isnotempty(extensions) and (extensions has 'MDE.Windows' or extensions has 'AzureSecurityWindowsAgent'), 1, 0)\n| extend hasGuestConfig = iff(isnotempty(extensions) and (extensions has 'ConfigurationForWindows' or extensions has 'AzurePolicyforWindows'), 1, 0)\n| extend hasWAC = iff(isnotempty(extensions) and extensions has 'AdminCenter', 1, 0)\n| extend hasChangeTrack = iff(isnotempty(extensions) and extensions has 'ChangeTracking-Windows', 1, 0)\n| extend hasKeyVault = iff(isnotempty(extensions) and extensions has 'KeyVaultForWindows', 1, 0)\n| extend hasHybridWorker = iff(isnotempty(extensions) and extensions has 'HybridRunbookWorker', 1, 0)\n| extend hasTagging = iff(array_length(bag_keys(tags)) > 0, 1, 0)\n| extend hasUpdateMgr = iff(isnotnull(properties.osProfile.windowsConfiguration.patchSettings), 1, 0)\n| extend isWS2025 = iff(tostring(properties.osSku) contains '2025', 1, 0)\n| summarize\n    Total = count(),\n    ['Update Manager'] = sum(hasUpdateMgr),\n    ['Defender for Cloud'] = sum(hasDefender),\n    ['Monitoring (AMA)'] = sum(hasAMA),\n    ['Guest Configuration'] = sum(hasGuestConfig),\n    ['Windows Admin Center'] = sum(hasWAC),\n    ['Change Tracking'] = sum(hasChangeTrack),\n    ['Key Vault'] = sum(hasKeyVault),\n    ['Hybrid Workers'] = sum(hasHybridWorker),\n    ['Resource Tagging'] = sum(hasTagging),\n    ['Hotpatching (WS2025)'] = sum(isWS2025)",
+                  "size": 0,
+                  "title": "Windows Arc Capabilities Summary",
+                  "showExportToExcel": true,
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": {
+                    "formatters": [
+                      { "columnMatch": "Total", "formatter": 8, "formatOptions": { "palette": "blue" } },
+                      { "columnMatch": "Update Manager|Defender for Cloud|Monitoring|Guest Configuration|Windows Admin Center|Resource Tagging|Hotpatching", "formatter": 8, "formatOptions": { "palette": "green" } }
+                    ],
+                    "filter": true
+                  }
+                },
+                "name": "winben-overview-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "winBenTab", "comparison": "isEqualTo", "value": "wbOverview" },
+          "name": "winben-overview-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              {
+                "type": 1,
+                "content": { "json": "### Update Manager\nServers with patch assessment/management configured via Azure Update Manager." }
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend configured = isnotnull(properties.osProfile.windowsConfiguration.patchSettings)\n| summarize count() by Status = iff(configured, 'Configured', 'Not Configured')",
+                  "size": 3, "title": "Update Manager Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"], "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "winben-update-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend configured = isnotnull(properties.osProfile.windowsConfiguration.patchSettings)\n| extend osSku = tostring(properties.osSku)\n| project Name = name, resourceGroup, osSku, Status = tostring(properties.status), UpdateMgr = iff(configured, 'Configured', 'Not Configured')\n| order by UpdateMgr desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "UpdateMgr", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "winben-update-grid"
+              },
+              {
+                "type": 12,
+                "content": { "version": "NotebookGroup/1.0", "groupType": "editable", "title": "Notes", "expandable": true, "expanded": false, "items": [{ "type": 1, "content": { "json": "**What it provides:** Automated patch assessment and deployment scheduling for Windows servers.\n\n**If not used:** Manual patching cycles, increased vulnerability window, labor-intensive compliance reporting.\n\n**Labor cost formula:** Hours per server per month x hourly rate x 12 months" } }] },
+                "name": "winben-update-notes"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "winBenTab", "comparison": "isEqualTo", "value": "wbUpdate" },
+          "name": "winben-update-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Microsoft Defender for Cloud\nServers with Defender/MDE extension installed for threat detection." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type in ('MDE.Windows', 'AzureSecurityWindowsAgent')\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasDefender = true\n) on $left.machineId == $right.parentId\n| extend Status = iff(isnotnull(hasDefender), 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "Defender Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"], "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "winben-defender-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type in ('MDE.Windows', 'AzureSecurityWindowsAgent')\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasDefender = true\n) on $left.machineId == $right.parentId\n| extend Defender = iff(isnotnull(hasDefender), 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), Status = tostring(properties.status), Defender\n| order by Defender desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "Defender", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "winben-defender-grid"
+              },
+              {
+                "type": 12,
+                "content": { "version": "NotebookGroup/1.0", "groupType": "editable", "title": "Notes", "expandable": true, "expanded": false, "items": [{ "type": 1, "content": { "json": "**What it provides:** Real-time threat detection, vulnerability assessment, and security recommendations.\n\n**If not used:** No automated threat detection, manual security scanning, delayed incident response.\n\n**Labor cost formula:** Security analyst hours x hourly rate x 12 months" } }] },
+                "name": "winben-defender-notes"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "winBenTab", "comparison": "isEqualTo", "value": "wbDefender" },
+          "name": "winben-defender-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Inventory & Tracking\nAll Arc-registered Windows servers are automatically inventoried." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend status = tostring(properties.status)\n| summarize count() by status",
+                  "size": 3, "title": "Connection Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"], "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Connected", "color": "green" }, { "seriesName": "Disconnected", "color": "red" }, { "seriesName": "Expired", "color": "gray" }] }
+                },
+                "customWidth": "40", "name": "winben-inventory-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), Status = tostring(properties.status), agentVersion = tostring(properties.agentVersion), lastStatusChange = tostring(properties.lastStatusChange), location\n| order by Name asc",
+                  "size": 0, "title": "Windows Server Inventory", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "Status", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Connected", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "winben-inventory-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "winBenTab", "comparison": "isEqualTo", "value": "wbInventory" },
+          "name": "winben-inventory-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Guest Configuration / Azure Policy\nServers with guest configuration agent for compliance auditing." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type in ('ConfigurationForWindows', 'AzurePolicyforWindows')\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasGC = true\n) on $left.machineId == $right.parentId\n| extend Status = iff(isnotnull(hasGC), 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "Guest Configuration Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"], "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "winben-gc-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type in ('ConfigurationForWindows', 'AzurePolicyforWindows')\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasGC = true\n) on $left.machineId == $right.parentId\n| extend GuestConfig = iff(isnotnull(hasGC), 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), GuestConfig\n| order by GuestConfig desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "GuestConfig", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "winben-gc-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "winBenTab", "comparison": "isEqualTo", "value": "wbGuestConfig" },
+          "name": "winben-gc-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Monitoring & Insights (AMA)\nServers with Azure Monitor Agent installed for log collection and monitoring." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'AzureMonitorWindowsAgent'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasAMA = true\n) on $left.machineId == $right.parentId\n| extend Status = iff(isnotnull(hasAMA), 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "Azure Monitor Agent Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"], "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "winben-ama-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'AzureMonitorWindowsAgent'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasAMA = true\n) on $left.machineId == $right.parentId\n| extend AMA = iff(isnotnull(hasAMA), 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), AMA\n| order by AMA desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "AMA", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "winben-ama-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "winBenTab", "comparison": "isEqualTo", "value": "wbMonitoring" },
+          "name": "winben-monitoring-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Resource Tagging\nServers with resource tags applied for cost tracking and organization." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend tagCount = array_length(bag_keys(tags))\n| extend Status = iff(tagCount > 0, 'Tagged', 'Not Tagged')\n| summarize count() by Status",
+                  "size": 3, "title": "Tagging Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"], "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Tagged", "color": "green" }, { "seriesName": "Not Tagged", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "winben-tag-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend tagCount = array_length(bag_keys(tags))\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), TagCount = tagCount, Tags = tostring(tags)\n| order by TagCount asc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "TagCount", "formatter": 8, "formatOptions": { "palette": "greenRed" } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "winben-tag-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "winBenTab", "comparison": "isEqualTo", "value": "wbTagging" },
+          "name": "winben-tagging-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Windows Admin Center\nServers with WAC extension for browser-based management." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'AdminCenter'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasWAC = true\n) on $left.machineId == $right.parentId\n| extend Status = iff(isnotnull(hasWAC), 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "WAC Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"], "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "winben-wac-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'AdminCenter'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasWAC = true\n) on $left.machineId == $right.parentId\n| extend WAC = iff(isnotnull(hasWAC), 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), Status = tostring(properties.status), WAC\n| order by WAC desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "WAC", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "winben-wac-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "winBenTab", "comparison": "isEqualTo", "value": "wbWac" },
+          "name": "winben-wac-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Hotpatching (Windows Server 2025)\nWindows Server 2025 servers eligible for hotpatching — apply security updates without reboots." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend osSku = tostring(properties.osSku)\n| extend isWS2025 = osSku contains '2025'\n| where isWS2025\n| project Name = name, resourceGroup, osSku, Status = tostring(properties.status), location\n| order by Name asc",
+                  "size": 0, "title": "Windows Server 2025 Eligible for Hotpatching",
+                  "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }], "rowLimit": 2000, "filter": true }
+                },
+                "name": "winben-hotpatch-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "winBenTab", "comparison": "isEqualTo", "value": "wbHotpatch" },
+          "name": "winben-hotpatch-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Change Tracking & Inventory\nServers with Change Tracking extension for monitoring file, registry, and software changes." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'ChangeTracking-Windows'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasCT = true\n) on $left.machineId == $right.parentId\n| extend Status = iff(isnotnull(hasCT), 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "Change Tracking Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "winben-ct-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'ChangeTracking-Windows'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasCT = true\n) on $left.machineId == $right.parentId\n| extend ChangeTracking = iff(isnotnull(hasCT), 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), Status = tostring(properties.status), ChangeTracking\n| order by ChangeTracking desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "ChangeTracking", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "winben-ct-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "winBenTab", "comparison": "isEqualTo", "value": "wbChangeTrack" },
+          "name": "winben-ct-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Azure Key Vault Extension\nServers with the Key Vault extension for automated certificate rotation and secret management." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'KeyVaultForWindows'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasKV = true\n) on $left.machineId == $right.parentId\n| extend Status = iff(isnotnull(hasKV), 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "Key Vault Extension Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "winben-kv-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'KeyVaultForWindows'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasKV = true\n) on $left.machineId == $right.parentId\n| extend KeyVault = iff(isnotnull(hasKV), 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), Status = tostring(properties.status), KeyVault\n| order by KeyVault desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "KeyVault", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "winben-kv-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "winBenTab", "comparison": "isEqualTo", "value": "wbKeyVault" },
+          "name": "winben-kv-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Azure Automation Hybrid Runbook Workers\nServers registered as Hybrid Runbook Workers for Azure Automation job execution." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'HybridRunbookWorker'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasHRW = true\n) on $left.machineId == $right.parentId\n| extend Status = iff(isnotnull(hasHRW), 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "Hybrid Worker Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "winben-hrw-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'HybridRunbookWorker'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasHRW = true\n) on $left.machineId == $right.parentId\n| extend HybridWorker = iff(isnotnull(hasHRW), 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), Status = tostring(properties.status), HybridWorker\n| order by HybridWorker desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "HybridWorker", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "winben-hrw-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "winBenTab", "comparison": "isEqualTo", "value": "wbHybridWorker" },
+          "name": "winben-hrw-group"
+        }
+      ]
+    },
+    "conditionalVisibility": {
+      "parameterName": "selectedTab",
+      "comparison": "isEqualTo",
+      "value": "winbenefits"
+    },
+    "name": "tab-winbenefits"
+  }
+]

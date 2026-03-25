@@ -1,0 +1,117 @@
+[
+  {
+    "type": 11,
+    "content": {
+      "version": "LinkItem/1.0",
+      "style": "tabs",
+      "tabStyle": "bigger",
+      "links": [
+        {
+          "id": "tab-link-overview",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "Overview",
+          "subTarget": "overview",
+          "style": "link"
+        },
+        {
+          "id": "tab-link-winservers",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "Windows Servers",
+          "subTarget": "winservers",
+          "style": "link"
+        },
+        {
+          "id": "tab-link-linuxservers",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "Linux Servers",
+          "subTarget": "linuxservers",
+          "style": "link"
+        },
+        {
+          "id": "tab-link-extwin",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "Extensions Windows",
+          "subTarget": "extwin",
+          "style": "link"
+        },
+        {
+          "id": "tab-link-extlinux",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "Extensions Linux",
+          "subTarget": "extlinux",
+          "style": "link"
+        },
+        {
+          "id": "tab-link-esu",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "ESU Tracking",
+          "subTarget": "esu",
+          "style": "link"
+        },
+        {
+          "id": "tab-link-winbenefits",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "Windows Arc Benefits",
+          "subTarget": "winbenefits",
+          "style": "link"
+        },
+        {
+          "id": "tab-link-linuxbenefits",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "Linux Arc Benefits",
+          "subTarget": "linuxbenefits",
+          "style": "link"
+        },
+        {
+          "id": "tab-link-sqlservers",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "SQL Servers & Databases",
+          "subTarget": "sqlservers",
+          "style": "link"
+        },
+        {
+          "id": "tab-link-sqlbpa",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "SQL Assessment",
+          "subTarget": "sqlbpa",
+          "style": "link"
+        },
+        {
+          "id": "tab-link-tags",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "Tags",
+          "subTarget": "tags",
+          "style": "link"
+        },
+        {
+          "id": "tab-link-loganalytics",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "Log Analytics",
+          "subTarget": "loganalytics",
+          "style": "link"
+        },
+        {
+          "id": "tab-link-agenthealth",
+          "cellValue": "selectedTab",
+          "linkTarget": "parameter",
+          "linkLabel": "Agent Health",
+          "subTarget": "agenthealth",
+          "style": "link"
+        }
+      ]
+    },
+    "name": "tab-navigation"
+  }
+]

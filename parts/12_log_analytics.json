@@ -1,0 +1,170 @@
+[
+  {
+    "type": 12,
+    "content": {
+      "version": "NotebookGroup/1.0",
+      "groupType": "editable",
+      "items": [
+        {
+          "type": 1,
+          "content": {
+            "json": "## Log Analytics Gap Analysis\nIdentify machines reporting to Log Analytics that are **not yet onboarded** to Azure Arc or are not Azure VMs. This helps discover servers that should be Arc-enabled."
+          },
+          "name": "la-header"
+        },
+        {
+          "type": 9,
+          "content": {
+            "version": "KqlParameterItem/1.0",
+            "crossComponentResources": ["{Subscriptions}"],
+            "parameters": [
+              {
+                "id": "f3a82c40-0012-4a00-8000-000000000001",
+                "version": "KqlParameterItem/1.0",
+                "name": "LaSubscriptions",
+                "label": "Subscriptions",
+                "type": 6,
+                "multiSelect": true,
+                "quote": "'",
+                "delimiter": ",",
+                "typeSettings": { "additionalResourceOptions": ["value::all"], "includeAll": true },
+                "defaultValue": "value::all"
+              },
+              {
+                "id": "f3a82c40-0012-4a00-8000-000000000002",
+                "version": "KqlParameterItem/1.0",
+                "name": "LaWorkspaces",
+                "label": "Workspaces",
+                "type": 5,
+                "multiSelect": true,
+                "quote": "'",
+                "delimiter": ",",
+                "query": "where type =~ 'microsoft.operationalinsights/workspaces'\n| project id",
+                "crossComponentResources": ["{LaSubscriptions}"],
+                "typeSettings": { "additionalResourceOptions": ["value::all"], "showDefault": false },
+                "defaultValue": "value::all",
+                "queryType": 1,
+                "resourceType": "microsoft.resourcegraph/resources"
+              },
+              {
+                "id": "f3a82c40-0012-4a00-8000-000000000003",
+                "version": "KqlParameterItem/1.0",
+                "name": "ShowOriginalTables",
+                "label": "Show Original Tables",
+                "type": 10,
+                "value": "No",
+                "typeSettings": { "additionalResourceOptions": [], "showDefault": false },
+                "jsonData": "[\"Yes\", \"No\"]"
+              }
+            ],
+            "style": "pills",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          },
+          "name": "la-params"
+        },
+        {
+          "type": 1,
+          "content": {
+            "json": "The result shows machines reporting via Heartbeat in Log Analytics that **are NOT** Azure VMs nor Azure Arc machines — potential candidates for Arc onboarding.",
+            "style": "info"
+          },
+          "name": "la-info"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "Heartbeat\n| summarize arg_max(TimeGenerated,*) by Resource\n| project ResourceId, Resource, Category, ComputerIP, SCAgentChannel\n| count\n| extend Metric = 'Log Analytics entries'",
+            "size": 4,
+            "timeContext": { "durationMs": 86400000 },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "crossComponentResources": ["{LaWorkspaces}"],
+            "visualization": "tiles",
+            "tileSettings": {
+              "titleContent": { "columnMatch": "Metric", "formatter": 1 },
+              "leftContent": { "columnMatch": "Count", "formatter": 12, "formatOptions": { "palette": "auto" }, "numberFormat": { "unit": 0, "options": { "style": "decimal", "maximumFractionDigits": 0 } } },
+              "showBorder": false
+            }
+          },
+          "customWidth": "50",
+          "name": "la-tile-heartbeat"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines' or type == 'microsoft.compute/virtualmachines'\n| count\n| extend Metric = 'Arc & Azure VM entries'",
+            "size": 4,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{LaSubscriptions}"],
+            "visualization": "tiles",
+            "tileSettings": {
+              "titleContent": { "columnMatch": "Metric", "formatter": 1 },
+              "leftContent": { "columnMatch": "Count", "formatter": 12, "formatOptions": { "palette": "auto" }, "numberFormat": { "unit": 0, "options": { "style": "decimal" } } },
+              "showBorder": false
+            }
+          },
+          "customWidth": "50",
+          "name": "la-tile-arg"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "Heartbeat\n| summarize arg_max(TimeGenerated,*) by Resource\n| project ResourceId, Resource, Category, ComputerIP, SCAgentChannel, TimeGenerated\n| sort by Resource asc",
+            "size": 0,
+            "title": "Log Analytics — Heartbeat Entries",
+            "timeContext": { "durationMs": 86400000 },
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "crossComponentResources": ["{LaWorkspaces}"],
+            "gridSettings": { "rowLimit": 10000, "filter": true }
+          },
+          "conditionalVisibility": { "parameterName": "ShowOriginalTables", "comparison": "isEqualTo", "value": "Yes" },
+          "name": "la-heartbeat-grid"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines' or type == 'microsoft.compute/virtualmachines'\n| project id, name",
+            "size": 0,
+            "title": "Resource Graph — Arc & Azure VMs",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["value::all"],
+            "gridSettings": { "rowLimit": 10000, "filter": true }
+          },
+          "conditionalVisibility": { "parameterName": "ShowOriginalTables", "comparison": "isEqualTo", "value": "Yes" },
+          "name": "la-arg-grid"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"ffbd6be0-0895-45b7-81a1-99b7222b60bd\",\"mergeType\":\"leftanti\",\"leftTable\":\"la-heartbeat-grid\",\"rightTable\":\"la-arg-grid\",\"leftColumn\":\"Resource\",\"rightColumn\":\"name\"}],\"projectRename\":[{\"originalName\":\"[la-heartbeat-grid].ResourceId\",\"mergedName\":\"ResourceId\",\"fromId\":\"ffbd6be0-0895-45b7-81a1-99b7222b60bd\"},{\"originalName\":\"[la-heartbeat-grid].Resource\",\"mergedName\":\"Resource Name\",\"fromId\":\"ffbd6be0-0895-45b7-81a1-99b7222b60bd\"},{\"originalName\":\"[la-heartbeat-grid].Category\",\"mergedName\":\"Category\",\"fromId\":\"ffbd6be0-0895-45b7-81a1-99b7222b60bd\"},{\"originalName\":\"[la-heartbeat-grid].ComputerIP\",\"mergedName\":\"ComputerIP\",\"fromId\":\"ffbd6be0-0895-45b7-81a1-99b7222b60bd\"},{\"originalName\":\"[la-heartbeat-grid].SCAgentChannel\",\"mergedName\":\"SCAgentChannel\",\"fromId\":\"ffbd6be0-0895-45b7-81a1-99b7222b60bd\"},{\"originalName\":\"[la-heartbeat-grid].TimeGenerated\",\"mergedName\":\"TimeGenerated\",\"fromId\":\"ffbd6be0-0895-45b7-81a1-99b7222b60bd\"}]}",
+            "size": 0,
+            "title": "Machines in Log Analytics but NOT in Arc nor Azure VMs",
+            "showExportToExcel": true,
+            "queryType": 7,
+            "gridSettings": {
+              "sortBy": [{ "itemKey": "TimeGenerated", "sortOrder": 2 }],
+              "filter": true
+            },
+            "sortBy": [{ "itemKey": "TimeGenerated", "sortOrder": 2 }]
+          },
+          "name": "la-gap-grid"
+        }
+      ]
+    },
+    "conditionalVisibility": {
+      "parameterName": "selectedTab",
+      "comparison": "isEqualTo",
+      "value": "loganalytics"
+    },
+    "name": "tab-loganalytics"
+  }
+]

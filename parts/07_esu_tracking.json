@@ -1,0 +1,263 @@
+[
+  {
+    "type": 12,
+    "content": {
+      "version": "NotebookGroup/1.0",
+      "groupType": "editable",
+      "items": [
+        {
+          "type": 1,
+          "content": {
+            "json": "## ESU Assignment Tracker\nTrack Extended Security Updates registration for end-of-life and approaching-EOL Windows Server and SQL Server versions."
+          },
+          "name": "esu-header"
+        },
+        {
+          "type": 1,
+          "content": {
+            "json": "### Windows Server 2012 — EOL: **10 Oct 2023** &nbsp; | &nbsp; Windows Server 2016 — EOL: **12 Jan 2027** &nbsp; | &nbsp; SQL Server 2012 — EOL: **12 Jul 2022** &nbsp; | &nbsp; SQL Server 2014 — EOL: **9 Jul 2024** &nbsp; | &nbsp; SQL Server 2016 — EOL: **14 Jul 2026**",
+            "style": "warning"
+          },
+          "name": "esu-eol-dates"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type =~ 'microsoft.hybridcompute/machines'\n| extend osSku = tostring(properties.osSku)\n| extend ESU = tostring(properties.licenseProfile.esuProfile.licenseAssignmentState)\n| where osSku contains 'Windows Server 2012'\n| summarize ServerCount = count() by ESU",
+            "size": 3,
+            "title": "Windows 2012 ESU Status",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart",
+            "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Assigned", "color": "green" }, { "seriesName": "NotAssigned", "color": "redBright" }] }
+          },
+          "customWidth": "33",
+          "name": "esu-win2012-pie"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend mssqlDiscovered = properties.mssqlDiscovered\n| where mssqlDiscovered == 'true'\n| extend machineId = tolower(tostring(id))\n| join kind=inner (\n    resources\n    | where type == 'microsoft.azurearcdata/sqlserverinstances'\n    | extend version = tostring(properties.version)\n    | extend edition = properties.edition\n    | extend containerId = tolower(tostring(properties.containerResourceId))\n    | where version contains '2012'\n    | where edition in ('Enterprise', 'Standard')\n    | where isnotempty(containerId)\n    | distinct containerId\n) on $left.machineId == $right.containerId\n| join kind=inner (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type in ('WindowsAgent.SqlServer', 'LinuxAgent.SqlServer')\n    | extend machineIdExt = tolower(iff(id contains '/extensions/WindowsAgent.SqlServer' or id contains '/extensions/LinuxAgent.SqlServer', substring(id, 0, indexof(id, '/extensions/')), ''))\n    | extend ESU = iff(isnotnull(properties.settings.enableExtendedSecurityUpdates), iff(properties.settings.enableExtendedSecurityUpdates == true, 'enabled', 'disabled'), 'N/A')\n    | project machineIdExt, ESU\n) on $left.machineId == $right.machineIdExt\n| summarize count() by ESU",
+            "size": 3,
+            "title": "SQL Server 2012 ESU Status",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart",
+            "chartSettings": { "seriesLabelSettings": [{ "seriesName": "enabled", "color": "green" }, { "seriesName": "disabled", "color": "redBright" }, { "seriesName": "N/A", "color": "gray" }] }
+          },
+          "customWidth": "33",
+          "name": "esu-sql2012-pie"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| where tostring(properties.version) contains '2014'\n| extend edition = tostring(properties.edition)\n| summarize Servers = count() by edition",
+            "size": 3,
+            "title": "SQL Server 2014 by Edition",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart"
+          },
+          "customWidth": "33",
+          "name": "esu-sql2014-pie"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend osSku = tostring(properties.osSku)\n| where osSku contains 'Windows Server 2012'\n| extend esuLicense = tostring(properties.licenseProfile.esuProfile.licenseAssignmentState)\n| where esuLicense == 'NotAssigned'\n| extend application = tostring(tags.Application)\n| summarize ServerCount = count() by application",
+            "size": 3,
+            "title": "Win 2012 ESU Not Assigned by Application",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart"
+          },
+          "customWidth": "33",
+          "name": "esu-win2012-app"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| where tostring(properties.osSku) contains 'Windows Server 2012'\n| extend edition = iff(tostring(properties.osSku) contains 'Datacenter', 'Datacenter', 'Standard')\n| summarize serverCount = count() by edition",
+            "size": 3,
+            "title": "Win 2012 Standard vs Datacenter",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart"
+          },
+          "customWidth": "33",
+          "name": "esu-win2012-edition"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| where tostring(properties.version) contains '2012'\n| extend edition = tostring(properties.edition)\n| summarize serverCount = count() by edition",
+            "size": 3,
+            "title": "SQL 2012 Editions",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart"
+          },
+          "customWidth": "33",
+          "name": "esu-sql2012-edition"
+        },
+        {
+          "type": 1,
+          "content": {
+            "json": "---\n### Windows Server 2016 & SQL Server 2016 — Approaching End of Life",
+            "style": "info"
+          },
+          "name": "esu-approaching-eol-header"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type =~ 'microsoft.hybridcompute/machines'\n| extend osSku = tostring(properties.osSku)\n| extend ESU = tostring(properties.licenseProfile.esuProfile.licenseAssignmentState)\n| where osSku contains 'Windows Server 2016'\n| summarize ServerCount = count() by ESU",
+            "size": 3,
+            "title": "Windows 2016 ESU Status",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart",
+            "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Assigned", "color": "green" }, { "seriesName": "NotAssigned", "color": "orange" }] }
+          },
+          "customWidth": "33",
+          "name": "esu-win2016-pie"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| where tostring(properties.version) contains '2016'\n| extend edition = tostring(properties.edition)\n| summarize Servers = count() by edition",
+            "size": 3,
+            "title": "SQL Server 2016 by Edition",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart"
+          },
+          "customWidth": "33",
+          "name": "esu-sql2016-pie"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| where tostring(properties.osSku) contains 'Windows Server 2016'\n| extend edition = iff(tostring(properties.osSku) contains 'Datacenter', 'Datacenter', 'Standard')\n| summarize serverCount = count() by edition",
+            "size": 3,
+            "title": "Win 2016 Standard vs Datacenter",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart"
+          },
+          "customWidth": "33",
+          "name": "esu-win2016-edition"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type =~ 'microsoft.hybridcompute/machines'\n| extend osSku = tostring(properties.osSku)\n| where osSku contains 'Windows Server 2016'\n| extend esuLicense = tostring(properties.licenseProfile.esuProfile.licenseAssignmentState)\n| join kind=inner (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| project subscriptionName, resourceGroup, esuLicense\n| summarize ServerCount = count() by subscriptionName, resourceGroup, esuLicense",
+            "size": 0,
+            "title": "Win 2016 ESU by Subscription & Resource Group",
+            "showExportToExcel": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "gridSettings": { "rowLimit": 1000, "filter": true }
+          },
+          "customWidth": "50",
+          "name": "esu-win2016-grid"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| where tostring(properties.version) contains '2016'\n| extend sqlEdition = tostring(properties.edition)\n| join kind=inner (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| project subscriptionName, resourceGroup, sqlEdition\n| summarize instanceCount = count() by subscriptionName, resourceGroup, sqlEdition",
+            "size": 0,
+            "title": "SQL 2016 by Subscription & Resource Group",
+            "showExportToExcel": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "gridSettings": { "rowLimit": 1000, "filter": true }
+          },
+          "customWidth": "50",
+          "name": "esu-sql2016-grid"
+        },
+        {
+          "type": 1,
+          "content": {
+            "json": "---"
+          },
+          "name": "esu-separator"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type =~ 'microsoft.hybridcompute/machines'\n| extend esuEligibility = tostring(properties.licenseProfile.esuProfile.esuEligibility)\n| where esuEligibility == 'Eligible'\n| extend ESUAttached = iff(properties.licenseProfile.esuProfile.licenseAssignmentState == 'Assigned', 1, 0)\n| join kind=inner (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| summarize percentESUAssigned = toint(round(todouble(sum(ESUAttached)) / count() * 100, 2)) by subscriptionName",
+            "size": 3,
+            "title": "% Windows ESU Assigned by Subscription",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "name": "esu-pct-by-sub"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type =~ 'microsoft.hybridcompute/machines'\n| extend osSku = tostring(properties.osSku)\n| where osSku contains 'Windows Server 2012'\n| extend esuLicense = tostring(properties.licenseProfile.esuProfile.licenseAssignmentState)\n| join kind=inner (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| project subscriptionName, resourceGroup, esuLicense\n| summarize ServerCount = count() by subscriptionName, resourceGroup, esuLicense",
+            "size": 0,
+            "title": "Win 2012 ESU by Subscription & Resource Group",
+            "showExportToExcel": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "gridSettings": { "rowLimit": 1000, "filter": true }
+          },
+          "customWidth": "50",
+          "name": "esu-win2012-grid"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| where tostring(properties.version) contains '2014'\n| extend sqlEdition = tostring(properties.edition)\n| join kind=inner (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| project subscriptionName, resourceGroup\n| summarize instanceCount = count() by subscriptionName, resourceGroup",
+            "size": 0,
+            "title": "SQL 2014 by Subscription & Resource Group",
+            "showExportToExcel": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "gridSettings": { "rowLimit": 1000, "filter": true }
+          },
+          "customWidth": "50",
+          "name": "esu-sql2014-grid"
+        }
+      ]
+    },
+    "conditionalVisibility": {
+      "parameterName": "selectedTab",
+      "comparison": "isEqualTo",
+      "value": "esu"
+    },
+    "name": "tab-esu"
+  }
+]

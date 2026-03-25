@@ -1,0 +1,299 @@
+[
+  {
+    "type": 12,
+    "content": {
+      "version": "NotebookGroup/1.0",
+      "groupType": "editable",
+      "items": [
+        {
+          "type": 1,
+          "content": {
+            "json": "## Linux Arc Benefits\nTrack which Arc capabilities are configured across your Linux servers. Each tab shows configured vs. unconfigured servers for a specific capability."
+          },
+          "name": "linben-header"
+        },
+        {
+          "type": 11,
+          "content": {
+            "version": "LinkItem/1.0",
+            "style": "tabs",
+            "links": [
+              { "id": "lb-overview", "cellValue": "linBenTab", "linkTarget": "parameter", "linkLabel": "Overview", "subTarget": "lbOverview", "style": "link" },
+              { "id": "lb-update", "cellValue": "linBenTab", "linkTarget": "parameter", "linkLabel": "Update Manager", "subTarget": "lbUpdate", "style": "link" },
+              { "id": "lb-defender", "cellValue": "linBenTab", "linkTarget": "parameter", "linkLabel": "Defender", "subTarget": "lbDefender", "style": "link" },
+              { "id": "lb-guestconfig", "cellValue": "linBenTab", "linkTarget": "parameter", "linkLabel": "Guest Config", "subTarget": "lbGuestConfig", "style": "link" },
+              { "id": "lb-monitoring", "cellValue": "linBenTab", "linkTarget": "parameter", "linkLabel": "Monitoring", "subTarget": "lbMonitoring", "style": "link" },
+              { "id": "lb-tagging", "cellValue": "linBenTab", "linkTarget": "parameter", "linkLabel": "Tagging", "subTarget": "lbTagging", "style": "link" },
+              { "id": "lb-ssh", "cellValue": "linBenTab", "linkTarget": "parameter", "linkLabel": "Entra SSH", "subTarget": "lbSsh", "style": "link" }
+            ]
+          },
+          "name": "linben-subtabs"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              {
+                "type": 1,
+                "content": { "json": "### Benefits Overview\nSummary of all Linux Arc capabilities across your estate." }
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | extend extType = tostring(properties.type)\n    | summarize extensions = make_set(extType) by parentId\n) on $left.machineId == $right.parentId\n| extend hasAMA = iff(isnotempty(extensions) and extensions has 'AzureMonitorLinuxAgent', 1, 0)\n| extend hasDefender = iff(isnotempty(extensions) and (extensions has 'MDE.Linux' or extensions has 'AzureSecurityLinuxAgent'), 1, 0)\n| extend hasGuestConfig = iff(isnotempty(extensions) and (extensions has 'ConfigurationForLinux' or extensions has 'AzurePolicyforLinux'), 1, 0)\n| extend hasSSH = iff(isnotempty(extensions) and extensions has 'AADSSHLoginForLinux', 1, 0)\n| extend hasTagging = iff(array_length(bag_keys(tags)) > 0, 1, 0)\n| extend hasUpdateMgr = iff(isnotnull(properties.osProfile.linuxConfiguration.patchSettings), 1, 0)\n| summarize\n    Total = count(),\n    ['Update Manager'] = sum(hasUpdateMgr),\n    ['Defender for Cloud'] = sum(hasDefender),\n    ['Monitoring (AMA)'] = sum(hasAMA),\n    ['Guest Configuration'] = sum(hasGuestConfig),\n    ['Entra SSH Login'] = sum(hasSSH),\n    ['Resource Tagging'] = sum(hasTagging)",
+                  "size": 0,
+                  "title": "Linux Arc Capabilities Summary",
+                  "showExportToExcel": true,
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": {
+                    "formatters": [
+                      { "columnMatch": "Total", "formatter": 8, "formatOptions": { "palette": "blue" } },
+                      { "columnMatch": "Update Manager|Defender for Cloud|Monitoring|Guest Configuration|Entra SSH|Resource Tagging", "formatter": 8, "formatOptions": { "palette": "green" } }
+                    ],
+                    "filter": true
+                  }
+                },
+                "name": "linben-overview-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "linBenTab", "comparison": "isEqualTo", "value": "lbOverview" },
+          "name": "linben-overview-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Update Manager\nLinux servers with patch assessment/management configured via Azure Update Manager." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend configured = isnotnull(properties.osProfile.linuxConfiguration.patchSettings)\n| summarize count() by Status = iff(configured, 'Configured', 'Not Configured')",
+                  "size": 3, "title": "Update Manager Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "linben-update-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend configured = isnotnull(properties.osProfile.linuxConfiguration.patchSettings)\n| extend osSku = tostring(properties.osSku)\n| project Name = name, resourceGroup, osSku, Status = tostring(properties.status), UpdateMgr = iff(configured, 'Configured', 'Not Configured')\n| order by UpdateMgr desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "UpdateMgr", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "linben-update-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "linBenTab", "comparison": "isEqualTo", "value": "lbUpdate" },
+          "name": "linben-update-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Microsoft Defender for Cloud\nLinux servers with Defender/MDE extension installed for threat detection." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type in ('MDE.Linux', 'AzureSecurityLinuxAgent')\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasDefender = true\n) on $left.machineId == $right.parentId\n| extend Status = iff(isnotnull(hasDefender), 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "Defender Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "linben-defender-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type in ('MDE.Linux', 'AzureSecurityLinuxAgent')\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasDefender = true\n) on $left.machineId == $right.parentId\n| extend Defender = iff(isnotnull(hasDefender), 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), Status = tostring(properties.status), Defender\n| order by Defender desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "Defender", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "linben-defender-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "linBenTab", "comparison": "isEqualTo", "value": "lbDefender" },
+          "name": "linben-defender-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Guest Configuration / Azure Policy\nLinux servers with guest configuration agent for compliance auditing." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type in ('ConfigurationForLinux', 'AzurePolicyforLinux')\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasGC = true\n) on $left.machineId == $right.parentId\n| extend Status = iff(isnotnull(hasGC), 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "Guest Configuration Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "linben-gc-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type in ('ConfigurationForLinux', 'AzurePolicyforLinux')\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasGC = true\n) on $left.machineId == $right.parentId\n| extend GuestConfig = iff(isnotnull(hasGC), 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), GuestConfig\n| order by GuestConfig desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "GuestConfig", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "linben-gc-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "linBenTab", "comparison": "isEqualTo", "value": "lbGuestConfig" },
+          "name": "linben-gc-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Monitoring & Insights (AMA)\nLinux servers with Azure Monitor Agent installed for log collection and monitoring." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'AzureMonitorLinuxAgent'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasAMA = true\n) on $left.machineId == $right.parentId\n| extend Status = iff(isnotnull(hasAMA), 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "Azure Monitor Agent Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "linben-ama-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'AzureMonitorLinuxAgent'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasAMA = true\n) on $left.machineId == $right.parentId\n| extend AMA = iff(isnotnull(hasAMA), 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), AMA\n| order by AMA desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "AMA", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "linben-ama-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "linBenTab", "comparison": "isEqualTo", "value": "lbMonitoring" },
+          "name": "linben-monitoring-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Resource Tagging\nLinux servers with resource tags applied for cost tracking and organization." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend tagCount = array_length(bag_keys(tags))\n| extend Status = iff(tagCount > 0, 'Tagged', 'Not Tagged')\n| summarize count() by Status",
+                  "size": 3, "title": "Tagging Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Tagged", "color": "green" }, { "seriesName": "Not Tagged", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "linben-tag-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend tagCount = array_length(bag_keys(tags))\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), TagCount = tagCount, Tags = tostring(tags)\n| order by TagCount asc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "TagCount", "formatter": 8, "formatOptions": { "palette": "greenRed" } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "linben-tag-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "linBenTab", "comparison": "isEqualTo", "value": "lbTagging" },
+          "name": "linben-tagging-group"
+        },
+        {
+          "type": 12,
+          "content": {
+            "version": "NotebookGroup/1.0",
+            "groupType": "editable",
+            "items": [
+              { "type": 1, "content": { "json": "### Entra ID SSH Login\nLinux servers with AAD/Entra ID SSH login extension for identity-based access control." } },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'AADSSHLoginForLinux'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasSSH = true\n) on $left.machineId == $right.parentId\n| extend Status = iff(isnotnull(hasSSH), 'Configured', 'Not Configured')\n| summarize count() by Status",
+                  "size": 3, "title": "Entra SSH Login Status",
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "visualization": "piechart",
+                  "chartSettings": { "seriesLabelSettings": [{ "seriesName": "Configured", "color": "green" }, { "seriesName": "Not Configured", "color": "red" }] }
+                },
+                "customWidth": "40", "name": "linben-ssh-pie"
+              },
+              {
+                "type": 3,
+                "content": {
+                  "version": "KqlItem/1.0",
+                  "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| extend machineId = tolower(id)\n| join kind=leftouter (\n    resources\n    | where type == 'microsoft.hybridcompute/machines/extensions'\n    | where properties.type == 'AADSSHLoginForLinux'\n    | extend parentId = tolower(substring(id, 0, indexof(id, '/extensions')))\n    | distinct parentId\n    | extend hasSSH = true\n) on $left.machineId == $right.parentId\n| extend EntraSSH = iff(isnotnull(hasSSH), 'Configured', 'Not Configured')\n| project Name = name, resourceGroup, osSku = tostring(properties.osSku), Status = tostring(properties.status), EntraSSH\n| order by EntraSSH desc, Name asc",
+                  "size": 0, "title": "Server Details", "showExportToExcel": true,
+                  "queryType": 1, "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"],
+                  "gridSettings": { "formatters": [{ "columnMatch": "Name", "formatter": 13, "formatOptions": { "linkTarget": "Resource", "showIcon": true } }, { "columnMatch": "EntraSSH", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Configured", "representation": "success", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }] } }], "rowLimit": 2000, "filter": true }
+                },
+                "customWidth": "60", "name": "linben-ssh-grid"
+              }
+            ]
+          },
+          "conditionalVisibility": { "parameterName": "linBenTab", "comparison": "isEqualTo", "value": "lbSsh" },
+          "name": "linben-ssh-group"
+        }
+      ]
+    },
+    "conditionalVisibility": {
+      "parameterName": "selectedTab",
+      "comparison": "isEqualTo",
+      "value": "linuxbenefits"
+    },
+    "name": "tab-linuxbenefits"
+  }
+]

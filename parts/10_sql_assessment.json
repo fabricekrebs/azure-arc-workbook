@@ -1,0 +1,179 @@
+[
+  {
+    "type": 12,
+    "content": {
+      "version": "NotebookGroup/1.0",
+      "groupType": "editable",
+      "items": [
+        {
+          "type": 1,
+          "content": {
+            "json": "## SQL Best Practices Assessment\nAnalyze SQL Server assessment results from Log Analytics. Requires a Log Analytics workspace with **SqlAssessment_CL** data."
+          },
+          "name": "sqlbpa-header"
+        },
+        {
+          "type": 9,
+          "content": {
+            "version": "KqlParameterItem/1.0",
+            "crossComponentResources": ["{Subscriptions}"],
+            "parameters": [
+              {
+                "id": "e3a82c40-0010-4a00-8000-000000000001",
+                "version": "KqlParameterItem/1.0",
+                "name": "BpaSubscription",
+                "label": "Subscription",
+                "type": 6,
+                "isRequired": true,
+                "multiSelect": true,
+                "quote": "'",
+                "delimiter": ",",
+                "typeSettings": { "additionalResourceOptions": ["value::all"], "includeAll": true, "showDefault": false },
+                "defaultValue": "value::all"
+              },
+              {
+                "id": "e3a82c40-0010-4a00-8000-000000000002",
+                "version": "KqlParameterItem/1.0",
+                "name": "LogAnalyticsWorkspace",
+                "label": "Log Analytics Workspace",
+                "type": 5,
+                "query": "where type =~ 'microsoft.operationalinsights/workspaces'\n| project id",
+                "crossComponentResources": ["{BpaSubscription}"],
+                "typeSettings": { "additionalResourceOptions": [] },
+                "queryType": 1,
+                "resourceType": "microsoft.resourcegraph/resources"
+              },
+              {
+                "id": "e3a82c40-0010-4a00-8000-000000000003",
+                "version": "KqlParameterItem/1.0",
+                "name": "BpaServerName",
+                "label": "Server Name",
+                "type": 2,
+                "multiSelect": true,
+                "quote": "'",
+                "delimiter": ",",
+                "query": "SqlAssessment_CL\n| extend asmt = parse_csv(RawData)\n| extend TargetType = case(asmt[6] == 1, 'Server', asmt[6] == 2, 'Database', '')\n| where TargetType == 'Server'\n| extend ServerName = replace_string(tostring(asmt[7]), '\\\\', '#')\n| distinct ServerName",
+                "crossComponentResources": ["{LogAnalyticsWorkspace}"],
+                "typeSettings": { "additionalResourceOptions": ["value::all"], "showDefault": false },
+                "defaultValue": "value::all",
+                "queryType": 0,
+                "resourceType": "microsoft.operationalinsights/workspaces"
+              },
+              {
+                "id": "e3a82c40-0010-4a00-8000-000000000004",
+                "version": "KqlParameterItem/1.0",
+                "name": "BpaTimeRange",
+                "label": "Time Range",
+                "type": 4,
+                "isRequired": true,
+                "typeSettings": {
+                  "selectableValues": [
+                    { "durationMs": 86400000 },
+                    { "durationMs": 604800000 },
+                    { "durationMs": 2592000000 },
+                    { "durationMs": 7776000000 }
+                  ]
+                },
+                "value": { "durationMs": 2592000000 }
+              }
+            ],
+            "style": "pills",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          },
+          "name": "sqlbpa-params"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "SqlAssessment_CL\n| extend asmt = parse_csv(RawData)\n| extend AsmtId = tostring(asmt[1]), CheckId = tostring(asmt[2]), TargetType = case(asmt[6] == 1, 'Server', asmt[6] == 2, 'Database', ''), TargetName = tostring(asmt[7]), Sev = toint(asmt[8])\n| join kind=inner (\n    SqlAssessment_CL\n    | extend asmt = parse_csv(RawData)\n    | extend AsmtId = tostring(asmt[1])\n    | summarize arg_max(TimeGenerated, *) by _ResourceId\n    | project AsmtId\n) on AsmtId\n| where Sev >= 0 and TargetType == 'Server'\n| extend ServerName = replace_string(tostring(asmt[7]), '\\\\', '#')\n| where ServerName in ({BpaServerName})\n| summarize count() by TargetName",
+            "size": 3,
+            "title": "Issues by Server",
+            "timeContextFromParameter": "BpaTimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "crossComponentResources": ["{LogAnalyticsWorkspace}"],
+            "visualization": "piechart"
+          },
+          "customWidth": "33",
+          "name": "sqlbpa-by-server"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "SqlAssessment_CL\n| extend asmt = parse_csv(RawData)\n| extend AsmtId = tostring(asmt[1]), CheckId = tostring(asmt[2]), TargetType = case(asmt[6] == 1, 'Server', asmt[6] == 2, 'Database', ''), TargetName = tostring(asmt[7]), Sev = toint(asmt[8])\n| join kind=inner (\n    SqlAssessment_CL\n    | extend asmt = parse_csv(RawData)\n    | extend AsmtId = tostring(asmt[1])\n    | summarize arg_max(TimeGenerated, *) by _ResourceId\n    | project AsmtId\n) on AsmtId\n| where Sev >= 0 and TargetType == 'Database'\n| extend ServerName = tostring(split(tostring(asmt[7]), ':', 0)[0])\n| extend ServerNameFilter = replace_string(ServerName, '\\\\', '#')\n| where ServerNameFilter in ({BpaServerName})\n| summarize count() by TargetName",
+            "size": 3,
+            "title": "Issues by Database",
+            "timeContextFromParameter": "BpaTimeRange",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "crossComponentResources": ["{LogAnalyticsWorkspace}"],
+            "visualization": "piechart"
+          },
+          "customWidth": "33",
+          "name": "sqlbpa-by-database"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "SqlAssessment_CL\n| extend asmt = parse_csv(RawData)\n| extend AsmtId = tostring(asmt[1]), CheckId = tostring(asmt[2]), TargetType = case(asmt[6] == 1, 'Server', asmt[6] == 2, 'Database', ''), TargetName = tostring(asmt[7]),\n    Severity = case(asmt[8] == 30, 'High', asmt[8] == 20, 'Medium', asmt[8] == 10, 'Low', asmt[8] == 0, 'Information', 'Passed'),\n    Sev = toint(asmt[8])\n| join kind=inner (\n    SqlAssessment_CL\n    | extend asmt = parse_csv(RawData)\n    | extend AsmtId = tostring(asmt[1])\n    | summarize arg_max(TimeGenerated, *) by _ResourceId\n    | project AsmtId\n) on AsmtId\n| where Sev >= 0\n| extend ServerName = case(TargetType == 'Server', tostring(asmt[7]), tostring(split(tostring(asmt[7]), ':', 0)[0]))\n| extend ServerNameFilter = replace_string(ServerName, '\\\\', '#')\n| where ServerNameFilter in ({BpaServerName})\n| summarize count() by Severity, Sev\n| order by Sev",
+            "size": 3,
+            "title": "Issues by Severity",
+            "timeContextFromParameter": "BpaTimeRange",
+            "exportFieldName": "Severity",
+            "exportParameterName": "bpaSeverity",
+            "exportDefaultValue": "",
+            "showExportToExcel": true,
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "crossComponentResources": ["{LogAnalyticsWorkspace}"],
+            "visualization": "table",
+            "gridSettings": {
+              "formatters": [
+                { "columnMatch": "Severity", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "High", "representation": "Sev0", "text": "{0}" }, { "operator": "==", "thresholdValue": "Medium", "representation": "Sev1", "text": "{0}" }, { "operator": "==", "thresholdValue": "Low", "representation": "Sev2", "text": "{0}" }, { "operator": "==", "thresholdValue": "Information", "representation": "Sev3", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "success", "text": "{0}" }] } },
+                { "columnMatch": "Sev", "formatter": 5 }
+              ]
+            }
+          },
+          "customWidth": "33",
+          "name": "sqlbpa-by-severity"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "SqlAssessment_CL\n| extend asmt = parse_csv(RawData)\n| extend AsmtId = tostring(asmt[1]), CheckId = tostring(asmt[2]), DisplayString = tostring(asmt[3]), Description = tostring(asmt[4]), HelpLink = tostring(asmt[5]),\n    TargetType = case(asmt[6] == 1, 'Server', asmt[6] == 2, 'Database', ''),\n    TargetName = tostring(asmt[7]),\n    Severity = case(asmt[8] == 30, 'High', asmt[8] == 20, 'Medium', asmt[8] == 10, 'Low', asmt[8] == 0, 'Information', asmt[8] == 1, 'Warning', asmt[8] == 2, 'Critical', 'Passed'),\n    Message = tostring(asmt[9]), Sev = toint(asmt[8])\n| join kind=inner (\n    SqlAssessment_CL\n    | extend asmt = parse_csv(RawData)\n    | extend AsmtId = tostring(asmt[1])\n    | summarize arg_max(TimeGenerated, *) by _ResourceId\n    | project AsmtId\n) on AsmtId\n| where Sev >= 0\n| extend ServerName = case(TargetType == 'Server', tostring(asmt[7]), tostring(split(tostring(asmt[7]), ':', 0)[0]))\n| extend ServerNameFilter = replace_string(ServerName, '\\\\', '#')\n| where ServerNameFilter in ({BpaServerName})\n| where '{bpaSeverity}' == '' or Severity == '{bpaSeverity}'\n| order by Sev desc, CheckId\n| project TimeGenerated, TargetType, ArcServer = _ResourceId, Severity, CheckId, DisplayString, Description, TargetName",
+            "size": 0,
+            "title": "Assessment Details{bpaSeverity:+ — filtered: {bpaSeverity}}",
+            "timeContextFromParameter": "BpaTimeRange",
+            "showExportToExcel": true,
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "crossComponentResources": ["{LogAnalyticsWorkspace}"],
+            "gridSettings": {
+              "formatters": [
+                { "columnMatch": "TimeGenerated", "formatter": 0, "formatOptions": { "customColumnWidthSetting": "22ch" } },
+                { "columnMatch": "TargetType", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "Server", "representation": "resource", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "ResourceFlat", "text": "{0}" }], "customColumnWidthSetting": "14ch" } },
+                { "columnMatch": "Severity", "formatter": 18, "formatOptions": { "thresholdsOptions": "icons", "thresholdsGrid": [{ "operator": "==", "thresholdValue": "High", "representation": "Sev0", "text": "{0}" }, { "operator": "==", "thresholdValue": "Medium", "representation": "Sev1", "text": "{0}" }, { "operator": "==", "thresholdValue": "Low", "representation": "Sev2", "text": "{0}" }, { "operator": "==", "thresholdValue": "Information", "representation": "Sev3", "text": "{0}" }, { "operator": "Default", "thresholdValue": null, "representation": "success", "text": "{0}" }], "customColumnWidthSetting": "14ch" } },
+                { "columnMatch": "CheckId", "formatter": 0, "formatOptions": { "customColumnWidthSetting": "16ch" } },
+                { "columnMatch": "Description", "formatter": 0, "formatOptions": { "customColumnWidthSetting": "80ch" } }
+              ],
+              "rowLimit": 500,
+              "filter": true
+            }
+          },
+          "name": "sqlbpa-detail-grid"
+        }
+      ]
+    },
+    "conditionalVisibility": {
+      "parameterName": "selectedTab",
+      "comparison": "isEqualTo",
+      "value": "sqlbpa"
+    },
+    "name": "tab-sqlbpa"
+  }
+]

@@ -1,0 +1,163 @@
+[
+  {
+    "type": 12,
+    "content": {
+      "version": "NotebookGroup/1.0",
+      "groupType": "editable",
+      "items": [
+        {
+          "type": 1,
+          "content": {
+            "json": "## Tag Distribution\nServer distribution by common tag values. Edit tag names in queries to match your organization's tagging convention."
+          },
+          "name": "tags-header"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend application = tostring(tags.Application)\n| summarize ServerCount = count() by application\n| order by application asc",
+            "size": 3,
+            "title": "All Servers by Application Tag",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "name": "tags-app"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend dataCenter = tostring(tags.DataCenter)\n| summarize ServerCount = count() by dataCenter\n| order by dataCenter asc",
+            "size": 3,
+            "title": "All Servers by DataCenter Tag",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "customWidth": "50",
+          "name": "tags-dc"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend businessUnit = tostring(tags.BusinessUnit)\n| summarize ServerCount = count() by businessUnit\n| order by businessUnit asc",
+            "size": 3,
+            "title": "All Servers by Business Unit Tag",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "customWidth": "50",
+          "name": "tags-bu"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend location_tag = tostring(tags.Location)\n| summarize ServerCount = count() by location_tag\n| order by location_tag asc",
+            "size": 3,
+            "title": "All Servers by Location Tag",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "customWidth": "50",
+          "name": "tags-loc"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend environment = tostring(tags.Environment)\n| summarize ServerCount = count() by environment\n| order by environment asc",
+            "size": 3,
+            "title": "All Servers by Environment Tag",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "customWidth": "50",
+          "name": "tags-env"
+        },
+        {
+          "type": 1,
+          "content": { "json": "---\n### SQL Server Tag Distribution" },
+          "name": "tags-sql-divider"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.mssqlDiscovered == 'true'\n| extend application = tostring(tags.Application)\n| summarize ServerCount = count() by application\n| order by application asc",
+            "size": 3,
+            "title": "SQL Server Hosts by Application",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "customWidth": "50",
+          "name": "tags-sql-app"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.mssqlDiscovered == 'true'\n| extend location_tag = tostring(tags.Location)\n| summarize ServerCount = count() by location_tag\n| order by location_tag asc",
+            "size": 3,
+            "title": "SQL Server Hosts by Location",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "customWidth": "50",
+          "name": "tags-sql-loc"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.mssqlDiscovered == 'true'\n| extend businessUnit = tostring(tags.BusinessUnit)\n| summarize ServerCount = count() by businessUnit\n| order by businessUnit asc",
+            "size": 3,
+            "title": "SQL Server Hosts by Business Unit",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "customWidth": "50",
+          "name": "tags-sql-bu"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.mssqlDiscovered == 'true'\n| extend dataCenter = tostring(tags.DataCenter)\n| summarize ServerCount = count() by dataCenter\n| order by dataCenter asc",
+            "size": 3,
+            "title": "SQL Server Hosts by DataCenter",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "customWidth": "50",
+          "name": "tags-sql-dc"
+        }
+      ]
+    },
+    "conditionalVisibility": {
+      "parameterName": "selectedTab",
+      "comparison": "isEqualTo",
+      "value": "tags"
+    },
+    "name": "tab-tags"
+  }
+]

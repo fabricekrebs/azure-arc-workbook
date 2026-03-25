@@ -1,0 +1,159 @@
+[
+  {
+    "type": 12,
+    "content": {
+      "version": "NotebookGroup/1.0",
+      "groupType": "editable",
+      "items": [
+        {
+          "type": 1,
+          "content": {
+            "json": "## Windows Server Details\nDetailed inventory of all Arc-enabled Windows Servers including OS version, ESU status, hardware, and connectivity."
+          },
+          "name": "win-header"
+        },
+        {
+          "type": 9,
+          "content": {
+            "version": "KqlParameterItem/1.0",
+            "crossComponentResources": ["{Subscriptions}"],
+            "parameters": [
+              {
+                "id": "c3a82c40-0003-4a00-8000-000000000001",
+                "version": "KqlParameterItem/1.0",
+                "name": "WinServerStatus",
+                "label": "Server Status",
+                "type": 2,
+                "multiSelect": true,
+                "quote": "'",
+                "delimiter": ",",
+                "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend ServerStatus = tostring(properties.status)\n| distinct ServerStatus",
+                "crossComponentResources": ["{Subscriptions}"],
+                "typeSettings": {
+                  "additionalResourceOptions": ["value::all"],
+                  "showDefault": false
+                },
+                "defaultValue": "value::all",
+                "queryType": 1,
+                "resourceType": "microsoft.resourcegraph/resources"
+              }
+            ],
+            "style": "pills",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          },
+          "name": "win-params"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend ServerStatus = tostring(properties.status)\n| where ServerStatus in ({WinServerStatus})\n| extend coreCount = toint(properties.detectedProperties.coreCount)\n| extend osSku = tostring(properties.osSku)\n| summarize TotalCores = sum(coreCount) by osSku\n| order by TotalCores desc",
+            "size": 3,
+            "title": "Cores by Windows OS",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart"
+          },
+          "customWidth": "33",
+          "name": "win-cores-chart"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend ServerStatus = tostring(properties.status)\n| where ServerStatus in ({WinServerStatus})\n| extend osSku = tostring(properties.osSku)\n| extend osVersion = tostring(properties.osVersion)\n| summarize ServerCount = count() by osSku, osVersion\n| order by osSku asc",
+            "size": 0,
+            "title": "OS Version by Windows OS SKU",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "gridSettings": {
+              "rowLimit": 500,
+              "filter": true
+            }
+          },
+          "customWidth": "33",
+          "name": "win-osversion-grid"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend ServerStatus = tostring(properties.status)\n| where ServerStatus in ({WinServerStatus})\n| extend osSku = tostring(properties.osSku)\n| extend shortOsSku = replace_string(osSku, 'Windows Server', '')\n| summarize ServerCount = count() by shortOsSku, osVersion = tostring(properties.osVersion)\n| summarize osVersionCount = count() by shortOsSku\n| order by shortOsSku asc",
+            "size": 3,
+            "title": "Distinct OS Versions per SKU",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "customWidth": "33",
+          "name": "win-versions-chart"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend ServerStatus = tostring(properties.status)\n| where ServerStatus in ({WinServerStatus})\n| extend Cores = toint(properties.detectedProperties.logicalCoreCount)\n| extend TotalPhysicalMemory = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\n| extend osSku = tostring(properties.osSku)\n| extend osVersion = tostring(properties.osVersion)\n| extend ESU = tostring(properties.licenseProfile.esuProfile.licenseAssignmentState)\n| extend esuEligibility = tostring(properties.licenseProfile.esuProfile.esuEligibility)\n| extend agentVersion = tostring(properties.agentVersion)\n| extend Manufacturer = tostring(properties.detectedProperties.manufacturer)\n| extend Model = tostring(properties.detectedProperties.model)\n| extend Domain = tostring(properties.domainName)\n| extend FQDN = tostring(properties.machineFqdn)\n| extend LicenseType = tostring(properties.licenseProfile.licenseType)\n| extend SoftwareAssurance = tostring(properties.licenseProfile.softwareAssuranceCustomer)\n| join kind=leftouter (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| project Name = name, subscriptionName, resourceGroup, osSku, osVersion, ServerStatus, Cores, ['Memory (GB)'] = TotalPhysicalMemory, ESU, esuEligibility, agentVersion, Manufacturer, Model, Domain, FQDN, LicenseType, SoftwareAssurance, location\n| order by Name asc",
+            "size": 0,
+            "title": "Windows Server Inventory",
+            "showAnalytics": true,
+            "showExportToExcel": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "gridSettings": {
+              "formatters": [
+                {
+                  "columnMatch": "Name",
+                  "formatter": 13,
+                  "formatOptions": {
+                    "linkTarget": "Resource",
+                    "linkIsContextBlade": true,
+                    "showIcon": true
+                  }
+                },
+                {
+                  "columnMatch": "ServerStatus",
+                  "formatter": 18,
+                  "formatOptions": {
+                    "thresholdsOptions": "icons",
+                    "thresholdsGrid": [
+                      { "operator": "==", "thresholdValue": "Connected", "representation": "success", "text": "{0}" },
+                      { "operator": "==", "thresholdValue": "Disconnected", "representation": "2", "text": "{0}" },
+                      { "operator": "==", "thresholdValue": "Expired", "representation": "4", "text": "{0}" },
+                      { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }
+                    ]
+                  }
+                },
+                {
+                  "columnMatch": "ESU",
+                  "formatter": 18,
+                  "formatOptions": {
+                    "thresholdsOptions": "icons",
+                    "thresholdsGrid": [
+                      { "operator": "==", "thresholdValue": "Assigned", "representation": "success", "text": "{0}" },
+                      { "operator": "==", "thresholdValue": "NotAssigned", "representation": "warning", "text": "{0}" },
+                      { "operator": "Default", "thresholdValue": null, "representation": "Blank", "text": "{0}" }
+                    ]
+                  }
+                }
+              ],
+              "rowLimit": 2000,
+              "filter": true
+            }
+          },
+          "name": "win-inventory-grid"
+        }
+      ]
+    },
+    "conditionalVisibility": {
+      "parameterName": "selectedTab",
+      "comparison": "isEqualTo",
+      "value": "winservers"
+    },
+    "name": "tab-winservers"
+  }
+]

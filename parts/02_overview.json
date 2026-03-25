@@ -1,0 +1,442 @@
+[
+  {
+    "type": 12,
+    "content": {
+      "version": "NotebookGroup/1.0",
+      "groupType": "editable",
+      "items": [
+        {
+          "type": 1,
+          "content": {
+            "json": "## Estate Overview\nHigh-level summary of all Arc-enabled servers and SQL Server instances across your subscriptions."
+          },
+          "name": "overview-header"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| summarize ServerCount = count()\n| extend Metric = 'All Arc Servers'",
+            "size": 4,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "tiles",
+            "tileSettings": {
+              "titleContent": {
+                "columnMatch": "Metric",
+                "formatter": 1
+              },
+              "leftContent": {
+                "columnMatch": "ServerCount",
+                "formatter": 12,
+                "formatOptions": {
+                  "palette": "auto"
+                },
+                "numberFormat": {
+                  "unit": 0,
+                  "options": {
+                    "style": "decimal",
+                    "maximumFractionDigits": 0
+                  }
+                }
+              },
+              "showBorder": false
+            }
+          },
+          "customWidth": "16",
+          "name": "tile-all-servers"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| summarize Count = count()\n| extend Metric = 'Windows Servers'",
+            "size": 4,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "tiles",
+            "tileSettings": {
+              "titleContent": {
+                "columnMatch": "Metric",
+                "formatter": 1
+              },
+              "leftContent": {
+                "columnMatch": "Count",
+                "formatter": 12,
+                "formatOptions": {
+                  "palette": "blue"
+                },
+                "numberFormat": {
+                  "unit": 0,
+                  "options": {
+                    "style": "decimal"
+                  }
+                }
+              },
+              "showBorder": false
+            }
+          },
+          "customWidth": "16",
+          "name": "tile-win-servers"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'linux'\n| summarize Count = count()\n| extend Metric = 'Linux Servers'",
+            "size": 4,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "tiles",
+            "tileSettings": {
+              "titleContent": {
+                "columnMatch": "Metric",
+                "formatter": 1
+              },
+              "leftContent": {
+                "columnMatch": "Count",
+                "formatter": 12,
+                "formatOptions": {
+                  "palette": "orange"
+                },
+                "numberFormat": {
+                  "unit": 0,
+                  "options": {
+                    "style": "decimal"
+                  }
+                }
+              },
+              "showBorder": false
+            }
+          },
+          "customWidth": "16",
+          "name": "tile-linux-servers"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.mssqlDiscovered == 'true'\n| summarize Count = count()\n| extend Metric = 'SQL Server Hosts'",
+            "size": 4,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "tiles",
+            "tileSettings": {
+              "titleContent": {
+                "columnMatch": "Metric",
+                "formatter": 1
+              },
+              "leftContent": {
+                "columnMatch": "Count",
+                "formatter": 12,
+                "formatOptions": {
+                  "palette": "purple"
+                },
+                "numberFormat": {
+                  "unit": 0,
+                  "options": {
+                    "style": "decimal"
+                  }
+                }
+              },
+              "showBorder": false
+            }
+          },
+          "customWidth": "16",
+          "name": "tile-sql-hosts"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| summarize Count = count()\n| extend Metric = 'SQL Instances'",
+            "size": 4,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "tiles",
+            "tileSettings": {
+              "titleContent": {
+                "columnMatch": "Metric",
+                "formatter": 1
+              },
+              "leftContent": {
+                "columnMatch": "Count",
+                "formatter": 12,
+                "formatOptions": {
+                  "palette": "purple"
+                },
+                "numberFormat": {
+                  "unit": 0,
+                  "options": {
+                    "style": "decimal"
+                  }
+                }
+              },
+              "showBorder": false
+            }
+          },
+          "customWidth": "16",
+          "name": "tile-sql-instances"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| where properties.edition == 'Standard'\n| summarize Count = count()\n| extend Metric = 'SQL Standard'",
+            "size": 4,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "tiles",
+            "tileSettings": {
+              "titleContent": {
+                "columnMatch": "Metric",
+                "formatter": 1
+              },
+              "leftContent": {
+                "columnMatch": "Count",
+                "formatter": 12,
+                "formatOptions": {
+                  "palette": "green"
+                },
+                "numberFormat": {
+                  "unit": 0,
+                  "options": {
+                    "style": "decimal"
+                  }
+                }
+              },
+              "showBorder": false
+            }
+          },
+          "customWidth": "16",
+          "name": "tile-sql-standard"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| where properties.edition == 'Enterprise'\n| summarize Count = count()\n| extend Metric = 'SQL Enterprise'",
+            "size": 4,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "tiles",
+            "tileSettings": {
+              "titleContent": {
+                "columnMatch": "Metric",
+                "formatter": 1
+              },
+              "leftContent": {
+                "columnMatch": "Count",
+                "formatter": 12,
+                "formatOptions": {
+                  "palette": "red"
+                },
+                "numberFormat": {
+                  "unit": 0,
+                  "options": {
+                    "style": "decimal"
+                  }
+                }
+              },
+              "showBorder": false
+            }
+          },
+          "customWidth": "16",
+          "name": "tile-sql-enterprise"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.osType == 'windows'\n| extend osSku = tostring(properties.osSku)\n| extend Version = case(\n    osSku contains '2012', 'Win Server 2012',\n    osSku contains '2016', 'Win Server 2016',\n    osSku contains '2019', 'Win Server 2019',\n    osSku contains '2022', 'Win Server 2022',\n    osSku contains '2025', 'Win Server 2025',\n    'Win Other')\n| summarize Count = count() by Version\n| order by Version asc",
+            "size": 4,
+            "title": "Windows Server Versions",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "tiles",
+            "tileSettings": {
+              "titleContent": {
+                "columnMatch": "Version",
+                "formatter": 1
+              },
+              "leftContent": {
+                "columnMatch": "Count",
+                "formatter": 12,
+                "formatOptions": {
+                  "palette": "blue"
+                },
+                "numberFormat": {
+                  "unit": 0,
+                  "options": {
+                    "style": "decimal",
+                    "maximumFractionDigits": 0
+                  }
+                }
+              },
+              "showBorder": false
+            }
+          },
+          "customWidth": "50",
+          "name": "tile-win-versions"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| extend ver = tostring(properties.version)\n| extend Version = case(\n    ver contains '2012', 'SQL 2012',\n    ver contains '2014', 'SQL 2014',\n    ver contains '2016', 'SQL 2016',\n    ver contains '2017', 'SQL 2017',\n    ver contains '2019', 'SQL 2019',\n    ver contains '2022', 'SQL 2022',\n    ver contains '2025', 'SQL 2025',\n    'SQL Other')\n| summarize Count = count() by Version\n| order by Version asc",
+            "size": 4,
+            "title": "SQL Server Versions",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "tiles",
+            "tileSettings": {
+              "titleContent": {
+                "columnMatch": "Version",
+                "formatter": 1
+              },
+              "leftContent": {
+                "columnMatch": "Count",
+                "formatter": 12,
+                "formatOptions": {
+                  "palette": "purple"
+                },
+                "numberFormat": {
+                  "unit": 0,
+                  "options": {
+                    "style": "decimal",
+                    "maximumFractionDigits": 0
+                  }
+                }
+              },
+              "showBorder": false
+            }
+          },
+          "customWidth": "50",
+          "name": "tile-sql-versions"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend osType = tostring(properties.osType)\n| summarize ServerCount = count() by osType",
+            "size": 3,
+            "title": "OS Type Distribution",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "piechart"
+          },
+          "customWidth": "33",
+          "name": "chart-os-type"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend osSku = tostring(properties.osSku)\n| extend osType = tostring(properties.osType)\n| where osType == 'windows'\n| extend shortOsSku = replace_string(osSku, 'Windows Server', '')\n| summarize ServerCount = count() by shortOsSku\n| order by shortOsSku asc",
+            "size": 3,
+            "title": "Windows Server by OS",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "barchart"
+          },
+          "customWidth": "33",
+          "name": "chart-win-os"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| extend SQLVersion = tostring(properties.version)\n| summarize Count = count() by SQLVersion\n| order by SQLVersion asc",
+            "size": 3,
+            "title": "SQL Instances by Version",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "barchart"
+          },
+          "customWidth": "33",
+          "name": "chart-sql-version"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend osSku = tostring(properties.osSku)\n| extend osType = tostring(properties.osType)\n| where osType == 'linux'\n| summarize ServerCount = count() by osSku\n| order by osSku asc",
+            "size": 3,
+            "title": "Linux Servers by OS",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "visualization": "barchart"
+          },
+          "customWidth": "50",
+          "name": "chart-linux-os"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend osSku = tostring(properties.osSku)\n| extend mssqlDiscovered = properties.mssqlDiscovered\n| join kind=inner (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| extend SQLFound = iff(mssqlDiscovered == 'true', 1, 0)\n| summarize ServerCount = count(), SQLServerCount = sum(SQLFound) by subscriptionName, resourceGroup, osSku\n| order by subscriptionName asc, resourceGroup asc, osSku asc",
+            "size": 0,
+            "title": "Servers per Subscription & Resource Group",
+            "showExportToExcel": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "gridSettings": {
+              "rowLimit": 1000,
+              "filter": true
+            }
+          },
+          "customWidth": "50",
+          "name": "grid-servers-per-sub"
+        }
+      ]
+    },
+    "conditionalVisibility": {
+      "parameterName": "selectedTab",
+      "comparison": "isEqualTo",
+      "value": "overview"
+    },
+    "name": "tab-overview"
+  }
+]

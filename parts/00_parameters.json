@@ -1,0 +1,175 @@
+[
+  {
+    "type": 1,
+    "content": {
+      "json": "# Azure Arc Comprehensive Dashboard\n\nUnified view of Azure Arc-enabled **Windows Servers**, **Linux Servers**, and **SQL Server** instances across your environment.\n\n> Enable *Show Cost Analysis* to see potential savings estimates for Arc capabilities."
+    },
+    "name": "workbook-header"
+  },
+  {
+    "type": 9,
+    "content": {
+      "version": "KqlParameterItem/1.0",
+      "crossComponentResources": [
+        "{Subscriptions}"
+      ],
+      "parameters": [
+        {
+          "id": "b3a82c40-0001-4a00-8000-000000000001",
+          "version": "KqlParameterItem/1.0",
+          "name": "Subscriptions",
+          "type": 6,
+          "multiSelect": true,
+          "quote": "'",
+          "delimiter": ",",
+          "typeSettings": {
+            "additionalResourceOptions": [
+              "value::all"
+            ],
+            "includeAll": true,
+            "showDefault": false
+          },
+          "defaultValue": "value::all"
+        },
+        {
+          "id": "b3a82c40-0001-4a00-8000-000000000003",
+          "version": "KqlParameterItem/1.0",
+          "name": "ShowCostAnalysis",
+          "label": "Show Cost Analysis",
+          "type": 10,
+          "typeSettings": {
+            "additionalResourceOptions": [],
+            "showDefault": false
+          },
+          "jsonData": "[\"No\", \"Yes\"]",
+          "value": "No"
+        }
+      ],
+      "style": "pills",
+      "queryType": 1,
+      "resourceType": "microsoft.resourcegraph/resources"
+    },
+    "name": "global-parameters"
+  },
+  {
+    "type": 9,
+    "content": {
+      "version": "KqlParameterItem/1.0",
+      "parameters": [
+        {
+          "id": "b3a82c40-0002-4a00-8000-000000000001",
+          "version": "KqlParameterItem/1.0",
+          "name": "DefenderCost",
+          "label": "Defender ($/yr/server)",
+          "type": 1,
+          "value": "450"
+        },
+        {
+          "id": "b3a82c40-0002-4a00-8000-000000000002",
+          "version": "KqlParameterItem/1.0",
+          "name": "UpdateMgrCost",
+          "label": "Update Mgr ($/yr/server)",
+          "type": 1,
+          "value": "400"
+        },
+        {
+          "id": "b3a82c40-0002-4a00-8000-000000000003",
+          "version": "KqlParameterItem/1.0",
+          "name": "GuestConfigCost",
+          "label": "Guest Config ($/yr/server)",
+          "type": 1,
+          "value": "350"
+        },
+        {
+          "id": "b3a82c40-0002-4a00-8000-000000000004",
+          "version": "KqlParameterItem/1.0",
+          "name": "InventoryCost",
+          "label": "Inventory ($/yr/server)",
+          "type": 1,
+          "value": "300"
+        },
+        {
+          "id": "b3a82c40-0002-4a00-8000-000000000005",
+          "version": "KqlParameterItem/1.0",
+          "name": "BpaCost",
+          "label": "BPA ($/yr/server)",
+          "type": 1,
+          "value": "250"
+        },
+        {
+          "id": "b3a82c40-0002-4a00-8000-000000000006",
+          "version": "KqlParameterItem/1.0",
+          "name": "HotpatchCost",
+          "label": "Hotpatch ($/yr/server)",
+          "type": 1,
+          "value": "225"
+        },
+        {
+          "id": "b3a82c40-0002-4a00-8000-000000000007",
+          "version": "KqlParameterItem/1.0",
+          "name": "MonitoringCost",
+          "label": "Monitoring ($/yr/server)",
+          "type": 1,
+          "value": "200"
+        },
+        {
+          "id": "b3a82c40-0002-4a00-8000-000000000008",
+          "version": "KqlParameterItem/1.0",
+          "name": "TaggingCost",
+          "label": "Tagging ($/yr/server)",
+          "type": 1,
+          "value": "150"
+        },
+        {
+          "id": "b3a82c40-0002-4a00-8000-000000000009",
+          "version": "KqlParameterItem/1.0",
+          "name": "WacCost",
+          "label": "WAC ($/yr/server)",
+          "type": 1,
+          "value": "125"
+        },
+        {
+          "id": "b3a82c40-0002-4a00-8000-00000000000a",
+          "version": "KqlParameterItem/1.0",
+          "name": "SqlDefenderCost",
+          "label": "SQL Defender ($/yr)",
+          "type": 1,
+          "value": "25"
+        },
+        {
+          "id": "b3a82c40-0002-4a00-8000-00000000000b",
+          "version": "KqlParameterItem/1.0",
+          "name": "SqlBpaCost",
+          "label": "SQL BPA ($/qtr)",
+          "type": 1,
+          "value": "75"
+        },
+        {
+          "id": "b3a82c40-0002-4a00-8000-00000000000c",
+          "version": "KqlParameterItem/1.0",
+          "name": "SqlPerfCost",
+          "label": "SQL Perf ($/mo)",
+          "type": 1,
+          "value": "50"
+        },
+        {
+          "id": "b3a82c40-0002-4a00-8000-00000000000d",
+          "version": "KqlParameterItem/1.0",
+          "name": "SqlInventoryCost",
+          "label": "SQL Inventory ($/qtr)",
+          "type": 1,
+          "value": "40"
+        }
+      ],
+      "style": "formHorizontal",
+      "queryType": 0,
+      "resourceType": "microsoft.operationalinsights/workspaces"
+    },
+    "conditionalVisibility": {
+      "parameterName": "ShowCostAnalysis",
+      "comparison": "isEqualTo",
+      "value": "Yes"
+    },
+    "name": "cost-parameters"
+  }
+]

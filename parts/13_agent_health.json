@@ -1,0 +1,176 @@
+[
+  {
+    "type": 12,
+    "content": {
+      "version": "NotebookGroup/1.0",
+      "groupType": "editable",
+      "items": [
+        {
+          "type": 1,
+          "content": {
+            "json": "## Agent Health & Operational Insights\nMonitor Arc agent versions, connectivity health, service status, cloud provider distribution, and license compliance across your estate."
+          },
+          "name": "health-header"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend agentVersion = tostring(properties.agentVersion)\n| summarize ServerCount = count() by agentVersion\n| order by agentVersion asc",
+            "size": 3,
+            "title": "Agent Version Distribution",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "barchart"
+          },
+          "name": "health-agent-version"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend cloudProvider = coalesce(tostring(properties.cloudMetadata.provider), 'On-Premises / Unknown')\n| summarize ServerCount = count() by cloudProvider",
+            "size": 3,
+            "title": "Cloud Provider Distribution",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart"
+          },
+          "customWidth": "33",
+          "name": "health-cloud-provider"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend status = tostring(properties.status)\n| summarize ServerCount = count() by status",
+            "size": 3,
+            "title": "Connection Status (All Servers)",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart",
+            "chartSettings": {
+              "seriesLabelSettings": [
+                { "seriesName": "Connected", "color": "green" },
+                { "seriesName": "Disconnected", "color": "red" },
+                { "seriesName": "Expired", "color": "gray" }
+              ]
+            }
+          },
+          "customWidth": "33",
+          "name": "health-connection-status"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend licenseType = coalesce(tostring(properties.licenseProfile.licenseType), 'Not Set')\n| summarize ServerCount = count() by licenseType",
+            "size": 3,
+            "title": "License Type Distribution",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "visualization": "piechart"
+          },
+          "customWidth": "33",
+          "name": "health-license-type"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where properties.status == 'Disconnected'\n| extend lastStatusChange = tostring(properties.lastStatusChange)\n| extend osType = tostring(properties.osType)\n| extend osSku = tostring(properties.osSku)\n| extend agentVersion = tostring(properties.agentVersion)\n| join kind=leftouter (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| project Name = name, subscriptionName, resourceGroup, osType, osSku, agentVersion, lastStatusChange, location\n| order by lastStatusChange asc",
+            "size": 0,
+            "title": "Disconnected Servers",
+            "showExportToExcel": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "gridSettings": {
+              "formatters": [
+                {
+                  "columnMatch": "Name",
+                  "formatter": 13,
+                  "formatOptions": { "linkTarget": "Resource", "showIcon": true }
+                }
+              ],
+              "rowLimit": 2000,
+              "filter": true
+            }
+          },
+          "name": "health-disconnected-grid"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend extensionServiceStatus = tostring(properties.serviceStatuses.extensionService.status)\n| extend gcServiceStatus = tostring(properties.serviceStatuses.guestConfigurationService.status)\n| where extensionServiceStatus != 'Running' or gcServiceStatus != 'Running'\n| extend osType = tostring(properties.osType)\n| project Name = name, resourceGroup, osType, extensionServiceStatus, gcServiceStatus, Status = tostring(properties.status)\n| order by Name asc",
+            "size": 0,
+            "title": "Servers with Degraded Services",
+            "showExportToExcel": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "gridSettings": {
+              "formatters": [
+                {
+                  "columnMatch": "Name",
+                  "formatter": 13,
+                  "formatOptions": { "linkTarget": "Resource", "showIcon": true }
+                },
+                {
+                  "columnMatch": "extensionServiceStatus|gcServiceStatus",
+                  "formatter": 18,
+                  "formatOptions": {
+                    "thresholdsOptions": "icons",
+                    "thresholdsGrid": [
+                      { "operator": "==", "thresholdValue": "Running", "representation": "success", "text": "{0}" },
+                      { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}" }
+                    ]
+                  }
+                }
+              ],
+              "rowLimit": 2000,
+              "filter": true
+            }
+          },
+          "name": "health-degraded-services"
+        },
+        {
+          "type": 3,
+          "content": {
+            "version": "KqlItem/1.0",
+            "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend licenseType = coalesce(tostring(properties.licenseProfile.licenseType), 'Not Set')\n| extend softwareAssurance = coalesce(tostring(properties.licenseProfile.softwareAssuranceCustomer), 'Unknown')\n| extend osType = tostring(properties.osType)\n| summarize ServerCount = count() by licenseType, softwareAssurance, osType\n| order by licenseType asc, softwareAssurance asc",
+            "size": 0,
+            "title": "License Compliance Summary",
+            "showExportToExcel": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "crossComponentResources": ["{Subscriptions}"],
+            "gridSettings": {
+              "formatters": [
+                {
+                  "columnMatch": "ServerCount",
+                  "formatter": 8,
+                  "formatOptions": { "palette": "blue" }
+                }
+              ],
+              "rowLimit": 500,
+              "filter": true
+            }
+          },
+          "name": "health-license-grid"
+        }
+      ]
+    },
+    "conditionalVisibility": {
+      "parameterName": "selectedTab",
+      "comparison": "isEqualTo",
+      "value": "agenthealth"
+    },
+    "name": "tab-agenthealth"
+  }
+]
