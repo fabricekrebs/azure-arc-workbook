@@ -1,6 +1,11 @@
-# Azure Arc Comprehensive Workbook
+# Azure Arc Workbooks
 
-A single Azure Monitor Workbook (`.workbook` JSON file) that provides a unified dashboard for **Azure Arc-enabled Windows Servers, Linux Servers, and SQL Server** instances. It consolidates information from 7 community workbooks/dashboards into one comprehensive view with 11 tabs.
+This repository now includes two Azure Monitor Workbooks:
+
+- `AzureArc-Comprehensive.workbook` - unified dashboard for **Azure Arc-enabled Windows Servers, Linux Servers, and SQL Server** instances.
+- `AzureArc-Metrics-DeepDive.workbook` - metrics-focused operational dashboard with broad Arc telemetry coverage (connectivity, agent health, extensions, SQL/ESU, and governance).
+
+The comprehensive workbook consolidates information from 7 community workbooks/dashboards into one broad view.
 
 ## Sources Combined
 
@@ -34,7 +39,9 @@ A single Azure Monitor Workbook (`.workbook` JSON file) that provides a unified 
 
 1. Go to **Azure Portal → Monitor → Workbooks → New**
 2. Click the **Advanced Editor** button (`</>` icon)
-3. Delete all content, paste the entire contents of `AzureArc-Comprehensive.workbook`
+3. Delete all content, paste the entire contents of one workbook file:
+	- `AzureArc-Comprehensive.workbook` for the all-in-one estate dashboard
+	- `AzureArc-Metrics-DeepDive.workbook` for deep metrics and operational views
 4. Click **Apply** → **Save**
 
 ## How to Edit

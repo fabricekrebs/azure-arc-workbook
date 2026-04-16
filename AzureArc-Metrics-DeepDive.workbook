@@ -1,0 +1,1764 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Azure Arc Metrics Deep Dive\n\nFocused operational workbook with broad Arc metrics coverage across connectivity, agent health, extension posture, SQL inventory, ESU tracking, and governance signals."
+      },
+      "name": "metrics-header"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "crossComponentResources": [
+          "{Subscriptions}"
+        ],
+        "parameters": [
+          {
+            "id": "f4a82c40-0001-4a00-8000-000000000001",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscriptions",
+            "label": "Subscriptions",
+            "type": 6,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "includeAll": true,
+              "showDefault": false
+            },
+            "defaultValue": "value::all"
+          },
+          {
+            "id": "f4a82c40-0001-4a00-8000-000000000002",
+            "version": "KqlParameterItem/1.0",
+            "name": "selectedTab",
+            "label": "Selected Tab",
+            "type": 1,
+            "value": "overview",
+            "isHiddenWhenLocked": true
+          },
+          {
+            "id": "f4a82c40-0001-4a00-8000-000000000003",
+            "version": "KqlParameterItem/1.0",
+            "name": "Workspaces",
+            "label": "Log Analytics Workspaces",
+            "type": 5,
+            "query": "where type =~ 'microsoft.operationalinsights/workspaces'\n| summarize by id, name\n| project id",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "resourceTypeFilter": {
+                "microsoft.operationalinsights/workspaces": true
+              },
+              "additionalResourceOptions": []
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ","
+          },
+          {
+            "id": "f4a82c40-0001-4a00-8000-000000000004",
+            "version": "KqlParameterItem/1.0",
+            "name": "PerfTimeRange",
+            "label": "Metrics Time Range",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 300000
+                },
+                {
+                  "durationMs": 900000
+                },
+                {
+                  "durationMs": 1800000
+                },
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 172800000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                },
+                {
+                  "durationMs": 15552000000
+                },
+                {
+                  "durationMs": 31536000000
+                },
+                {
+                  "durationMs": 63072000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 86400000
+            }
+          }
+        ],
+        "style": "pills",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources"
+      },
+      "name": "metrics-parameters"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "tabStyle": "bigger",
+        "links": [
+          {
+            "id": "metrics-tab-overview",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Overview",
+            "subTarget": "overview",
+            "style": "link"
+          },
+          {
+            "id": "metrics-tab-agent",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Agent Health",
+            "subTarget": "agent",
+            "style": "link"
+          },
+          {
+            "id": "metrics-tab-ext",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Extensions",
+            "subTarget": "extensions",
+            "style": "link"
+          },
+          {
+            "id": "metrics-tab-sql",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "SQL & ESU",
+            "subTarget": "sqlesu",
+            "style": "link"
+          },
+          {
+            "id": "metrics-tab-gov",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Governance",
+            "subTarget": "governance",
+            "style": "link"
+          },
+          {
+            "id": "metrics-tab-winperf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Windows Perf",
+            "subTarget": "winperf",
+            "style": "link"
+          },
+          {
+            "id": "metrics-tab-linuxperf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Linux Perf",
+            "subTarget": "linuxperf",
+            "style": "link"
+          },
+          {
+            "id": "metrics-tab-sqlperf",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "SQL Perf",
+            "subTarget": "sqlperf",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "metrics-tabs"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Estate Metrics Overview\nBroad, high-signal indicators for Arc-connected machines and SQL estate composition."
+            },
+            "name": "overview-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| summarize Value = count()\n| extend Metric = 'Arc Machines'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "auto"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "16",
+            "name": "overview-tile-machines"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where tostring(properties.status) == 'Connected'\n| summarize Value = count()\n| extend Metric = 'Connected'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "green"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "16",
+            "name": "overview-tile-connected"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where tostring(properties.status) != 'Connected'\n| summarize Value = count()\n| extend Metric = 'Not Connected'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "red"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "16",
+            "name": "overview-tile-not-connected"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where tostring(properties.osType) == 'windows'\n| summarize Value = count()\n| extend Metric = 'Windows Machines'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "blue"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "16",
+            "name": "overview-tile-windows"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where tostring(properties.osType) == 'linux'\n| summarize Value = count()\n| extend Metric = 'Linux Machines'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "orange"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "16",
+            "name": "overview-tile-linux"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend cores = toint(coalesce(tostring(properties.detectedProperties.coreCount), '0'))\n| summarize Value = sum(cores)\n| extend Metric = 'Total Cores'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "teal"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "16",
+            "name": "overview-tile-cores"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where tostring(properties.mssqlDiscovered) == 'true'\n| summarize Value = count()\n| extend Metric = 'SQL Hosts Discovered'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "purple"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "16",
+            "name": "overview-tile-sql-hosts"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| summarize Value = count()\n| extend Metric = 'SQL Instances'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "purple"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "16",
+            "name": "overview-tile-sql-instances"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend osType = tostring(properties.osType)\n| summarize MachineCount = count() by osType\n| order by MachineCount desc",
+              "size": 3,
+              "title": "Machine Count by OS",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart"
+            },
+            "customWidth": "33",
+            "name": "overview-os-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| summarize MachineCount = count() by location\n| order by MachineCount desc",
+              "size": 3,
+              "title": "Machine Count by Region",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "barchart"
+            },
+            "customWidth": "67",
+            "name": "overview-location-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| join kind=leftouter (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| summarize TotalMachines = count(), Connected = sum(iff(tostring(properties.status) == 'Connected', 1, 0)), NotConnected = sum(iff(tostring(properties.status) != 'Connected', 1, 0)) by subscriptionName\n| order by TotalMachines desc",
+              "size": 0,
+              "title": "Connectivity by Subscription",
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 500,
+                "filter": true
+              }
+            },
+            "name": "overview-subscription-grid"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "overview"
+      },
+      "name": "tab-overview"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Agent Health Metrics\nVersion spread, connectivity reliability, provider footprint, and service health indicators."
+            },
+            "name": "agent-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend agentVersion = coalesce(tostring(properties.agentVersion), 'Unknown')\n| summarize MachineCount = count() by agentVersion\n| order by agentVersion asc",
+              "size": 3,
+              "title": "Agent Version Distribution",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "barchart"
+            },
+            "customWidth": "34",
+            "name": "agent-version-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend status = coalesce(tostring(properties.status), 'Unknown')\n| summarize MachineCount = count() by status",
+              "size": 3,
+              "title": "Connection Status",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart"
+            },
+            "customWidth": "33",
+            "name": "agent-status-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend provider = coalesce(tostring(properties.cloudMetadata.provider), 'On-Premises/Unknown')\n| summarize MachineCount = count() by provider",
+              "size": 3,
+              "title": "Cloud Provider Mix",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart"
+            },
+            "customWidth": "33",
+            "name": "agent-provider-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend extensionService = coalesce(tostring(properties.serviceStatuses.extensionService.status), 'Unknown')\n| summarize MachineCount = count() by extensionService",
+              "size": 3,
+              "title": "Extension Service Health",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart"
+            },
+            "customWidth": "33",
+            "name": "agent-extension-service-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend gcService = coalesce(tostring(properties.serviceStatuses.guestConfigurationService.status), 'Unknown')\n| summarize MachineCount = count() by gcService",
+              "size": 3,
+              "title": "Guest Config Service Health",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart"
+            },
+            "customWidth": "33",
+            "name": "agent-gc-service-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| where tostring(properties.status) != 'Connected'\n| join kind=leftouter (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| project Name = name, subscriptionName, resourceGroup, osType = tostring(properties.osType), status = tostring(properties.status), lastStatusChange = tostring(properties.lastStatusChange), location\n| order by lastStatusChange asc",
+              "size": 0,
+              "title": "Disconnected or Expired Machines",
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Name",
+                    "formatter": 13,
+                    "formatOptions": {
+                      "linkTarget": "Resource",
+                      "showIcon": true
+                    }
+                  }
+                ],
+                "rowLimit": 2000,
+                "filter": true
+              }
+            },
+            "name": "agent-disconnected-grid"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "agent"
+      },
+      "name": "tab-agent"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Extension Metrics\nTrack extension volume, success/failure rates, and extension-type adoption across your Arc estate."
+            },
+            "name": "ext-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines/extensions'\n| summarize Value = count()\n| extend Metric = 'Total Arc Extensions'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "auto"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "25",
+            "name": "ext-tile-total"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines/extensions'\n| where tostring(properties.provisioningState) == 'Succeeded'\n| summarize Value = count()\n| extend Metric = 'Succeeded'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "green"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "25",
+            "name": "ext-tile-success"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines/extensions'\n| where tostring(properties.provisioningState) != 'Succeeded'\n| summarize Value = count()\n| extend Metric = 'Not Succeeded'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "red"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "25",
+            "name": "ext-tile-failed"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines/extensions'\n| where tostring(properties.provisioningState) != 'Succeeded'\n| extend machineId = tolower(tostring(split(id, '/extensions/', 0)[0]))\n| summarize Value = dcount(machineId)\n| extend Metric = 'Machines with Extension Issues'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "orange"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "25",
+            "name": "ext-tile-machines-issues"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines/extensions'\n| extend extensionType = coalesce(tostring(properties.type), 'Unknown')\n| summarize ExtensionCount = count() by extensionType\n| order by ExtensionCount desc",
+              "size": 3,
+              "title": "Extensions by Type",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "barchart"
+            },
+            "customWidth": "67",
+            "name": "ext-type-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines/extensions'\n| extend provisioningState = coalesce(tostring(properties.provisioningState), 'Unknown')\n| summarize ExtensionCount = count() by provisioningState",
+              "size": 3,
+              "title": "Provisioning State Distribution",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart"
+            },
+            "customWidth": "33",
+            "name": "ext-state-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines/extensions'\n| extend machineId = tolower(tostring(split(id, '/extensions/', 0)[0]))\n| extend extensionName = tolower(tostring(split(name, '/', 1)[1]))\n| summarize\n    HasAMA = max(iff(extensionName in ('azuremonitorwindowsagent', 'azuremonitorlinuxagent', 'azuremonitoragent'), 1, 0)),\n    HasMDE = max(iff(extensionName in ('mde.windows', 'mde.linux', 'microsoftdefenderforendpoint'), 1, 0)),\n    HasGuestConfig = max(iff(extensionName == 'guestconfiguration', 1, 0)),\n    HasUpdateManager = max(iff(extensionName in ('windowsosupdateextension', 'linuxosupdateextension'), 1, 0))\n  by machineId\n| summarize\n    Machines = count(),\n    AMAEnabled = sum(HasAMA),\n    MDEEnabled = sum(HasMDE),\n    GuestConfigEnabled = sum(HasGuestConfig),\n    UpdateManagerEnabled = sum(HasUpdateManager)",
+              "size": 0,
+              "title": "Key Extension Coverage Metrics",
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 50,
+                "filter": false
+              }
+            },
+            "name": "ext-coverage-grid"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines/extensions'\n| where tostring(properties.provisioningState) != 'Succeeded'\n| extend machineId = tostring(split(id, '/extensions/', 0)[0])\n| extend extensionName = tostring(split(name, '/', 1)[1])\n| project machineId, extensionName, extensionType = tostring(properties.type), provisioningState = tostring(properties.provisioningState), statusMessage = tostring(properties.statusMessage)\n| order by extensionName asc",
+              "size": 0,
+              "title": "Extensions Needing Attention",
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "filter": true
+              }
+            },
+            "name": "ext-problem-grid"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "extensions"
+      },
+      "name": "tab-extensions"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## SQL & ESU Metrics\nInventory and compliance visibility for Arc-enabled SQL and legacy ESU scenarios."
+            },
+            "name": "sql-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| summarize Value = count()\n| extend Metric = 'SQL Instances'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "purple"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "20",
+            "name": "sql-tile-instances"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances/databases'\n| summarize Value = count()\n| extend Metric = 'SQL Databases'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "purple"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "20",
+            "name": "sql-tile-databases"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type =~ 'microsoft.hybridcompute/machines'\n| where tostring(properties.osSku) contains 'Windows Server 2012'\n| summarize Value = count()\n| extend Metric = 'Windows 2012 Servers'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "orange"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "20",
+            "name": "sql-tile-win2012"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type =~ 'microsoft.hybridcompute/machines'\n| where tostring(properties.osSku) contains 'Windows Server 2012'\n| where tostring(properties.licenseProfile.esuProfile.licenseAssignmentState) == 'Assigned'\n| summarize Value = count()\n| extend Metric = 'Win 2012 ESU Assigned'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "green"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "20",
+            "name": "sql-tile-win2012-esu-assigned"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| where tostring(properties.version) contains '2014'\n| summarize Value = count()\n| extend Metric = 'SQL 2014 Instances'",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Metric",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Value",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "red"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                },
+                "showBorder": false
+              }
+            },
+            "customWidth": "20",
+            "name": "sql-tile-sql2014"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| extend edition = coalesce(tostring(properties.edition), 'Unknown')\n| summarize InstanceCount = count() by edition",
+              "size": 3,
+              "title": "SQL Edition Distribution",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart"
+            },
+            "customWidth": "33",
+            "name": "sql-edition-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| extend ver = tostring(properties.version)\n| extend Version = case(\n    ver contains '2012', 'SQL 2012',\n    ver contains '2014', 'SQL 2014',\n    ver contains '2016', 'SQL 2016',\n    ver contains '2017', 'SQL 2017',\n    ver contains '2019', 'SQL 2019',\n    ver contains '2022', 'SQL 2022',\n    'Other'\n)\n| summarize InstanceCount = count() by Version\n| order by Version asc",
+              "size": 3,
+              "title": "SQL Version Distribution",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "barchart"
+            },
+            "customWidth": "67",
+            "name": "sql-version-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type =~ 'microsoft.hybridcompute/machines'\n| where tostring(properties.osSku) contains 'Windows Server 2012'\n| extend ESUState = coalesce(tostring(properties.licenseProfile.esuProfile.licenseAssignmentState), 'Unknown')\n| summarize MachineCount = count() by ESUState",
+              "size": 3,
+              "title": "Windows 2012 ESU Assignment",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart"
+            },
+            "customWidth": "33",
+            "name": "sql-win2012-esu-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.azurearcdata/sqlserverinstances'\n| join kind=leftouter (\n    resourcecontainers\n    | where type == 'microsoft.resources/subscriptions'\n    | project subscriptionId, subscriptionName = name\n) on subscriptionId\n| project Name = name, subscriptionName, resourceGroup, edition = tostring(properties.edition), version = tostring(properties.version), host = tostring(properties.containerResourceId), location\n| order by subscriptionName asc, Name asc",
+              "size": 0,
+              "title": "SQL Instance Inventory",
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Name",
+                    "formatter": 13,
+                    "formatOptions": {
+                      "linkTarget": "Resource",
+                      "showIcon": true
+                    }
+                  }
+                ],
+                "rowLimit": 2000,
+                "filter": true
+              }
+            },
+            "name": "sql-inventory-grid"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "sqlesu"
+      },
+      "name": "tab-sql-esu"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Governance & Compliance Metrics\nLicense, tag, and resource-hygiene signals that help operational governance for Arc estates."
+            },
+            "name": "gov-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend licenseType = coalesce(tostring(properties.licenseProfile.licenseType), 'Not Set')\n| summarize MachineCount = count() by licenseType",
+              "size": 3,
+              "title": "License Type Distribution",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart"
+            },
+            "customWidth": "33",
+            "name": "gov-license-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend softwareAssurance = coalesce(tostring(properties.licenseProfile.softwareAssuranceCustomer), 'Unknown')\n| summarize MachineCount = count() by softwareAssurance",
+              "size": 3,
+              "title": "Software Assurance Coverage",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart"
+            },
+            "customWidth": "33",
+            "name": "gov-sa-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend environment = coalesce(tostring(tags.Environment), 'Missing')\n| summarize MachineCount = count() by environment\n| order by MachineCount desc",
+              "size": 3,
+              "title": "Environment Tag Coverage",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "barchart"
+            },
+            "customWidth": "34",
+            "name": "gov-environment-tag-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend hasApplicationTag = iff(isempty(tostring(tags.Application)), 0, 1)\n| extend hasBusinessUnitTag = iff(isempty(tostring(tags.BusinessUnit)), 0, 1)\n| extend hasLocationTag = iff(isempty(tostring(tags.Location)), 0, 1)\n| summarize\n    Machines = count(),\n    WithApplicationTag = sum(hasApplicationTag),\n    WithBusinessUnitTag = sum(hasBusinessUnitTag),\n    WithLocationTag = sum(hasLocationTag)",
+              "size": 0,
+              "title": "Tag Completeness Summary",
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 50,
+                "filter": false
+              }
+            },
+            "name": "gov-tag-completeness"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend osType = tostring(properties.osType)\n| extend domain = coalesce(tostring(properties.domainName), 'Unknown')\n| summarize MachineCount = count() by domain, osType\n| order by MachineCount desc",
+              "size": 0,
+              "title": "Domain Distribution",
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 1000,
+                "filter": true
+              }
+            },
+            "name": "gov-domain-grid"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\n| where type == 'microsoft.hybridcompute/machines'\n| extend status = coalesce(tostring(properties.status), 'Unknown')\n| extend osType = tostring(properties.osType)\n| extend agentVersion = coalesce(tostring(properties.agentVersion), 'Unknown')\n| extend licenseType = coalesce(tostring(properties.licenseProfile.licenseType), 'Not Set')\n| project Name = name, osType, status, agentVersion, licenseType, location, resourceGroup\n| order by Name asc",
+              "size": 0,
+              "title": "Machine Governance Detail",
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Name",
+                    "formatter": 13,
+                    "formatOptions": {
+                      "linkTarget": "Resource",
+                      "showIcon": true
+                    }
+                  }
+                ],
+                "rowLimit": 5000,
+                "filter": true
+              }
+            },
+            "name": "gov-machine-grid"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "governance"
+      },
+      "name": "tab-governance"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Windows Monitoring Metrics\nCPU, memory, disk, and network telemetry from InsightsMetrics for Arc-connected Windows machines.\n\n**Requires:** VM Insights or AMA performance collection enabled on the selected workspace(s)."
+            },
+            "name": "winperf-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let WinHosts = Heartbeat\n| where OSType =~ 'Windows'\n| summarize arg_max(TimeGenerated, *) by Computer\n| project Computer;\nInsightsMetrics\n| where Namespace == 'Processor' and Name == 'UtilizationPercentage'\n| join kind=inner WinHosts on Computer\n| summarize AvgCPU = round(avg(Val), 2) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer",
+              "size": 0,
+              "title": "Windows CPU Utilization %",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "unit": 1,
+                  "min": 0,
+                  "max": 100
+                }
+              }
+            },
+            "name": "winperf-cpu-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let WinHosts = Heartbeat\n| where OSType =~ 'Windows'\n| summarize arg_max(TimeGenerated, *) by Computer\n| project Computer;\nInsightsMetrics\n| where Namespace == 'Memory' and Name == 'AvailableMB'\n| join kind=inner WinHosts on Computer\n| summarize AvailableMB = round(avg(Val), 1) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer",
+              "size": 0,
+              "title": "Windows Available Memory (MB)",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "unit": 4,
+                  "min": 0
+                }
+              }
+            },
+            "name": "winperf-memory-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let WinHosts = Heartbeat\n| where OSType =~ 'Windows'\n| summarize arg_max(TimeGenerated, *) by Computer\n| project Computer;\nInsightsMetrics\n| where Namespace == 'LogicalDisk' and Name == 'FreeSpacePercentage'\n| extend Drive = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\n| where isnotempty(Drive)\n| join kind=inner WinHosts on Computer\n| summarize FreeSpacePct = round(avg(Val), 2) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer, Drive",
+              "size": 0,
+              "title": "Windows Disk Free Space %",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "unit": 1,
+                  "min": 0,
+                  "max": 100
+                }
+              }
+            },
+            "name": "winperf-disk-grid"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let WinHosts = Heartbeat\n| where OSType =~ 'Windows'\n| summarize arg_max(TimeGenerated, *) by Computer\n| project Computer;\nInsightsMetrics\n| where Namespace == 'Network' and Name in ('WriteBytesPerSecond', 'ReadBytesPerSecond')\n| join kind=inner WinHosts on Computer\n| summarize BytesPerSec = round(avg(Val), 2) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer, Name",
+              "size": 0,
+              "title": "Windows Network Throughput (Bytes/sec)",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "unit": 2,
+                  "min": 0
+                }
+              }
+            },
+            "name": "winperf-network-grid"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "winperf"
+      },
+      "name": "tab-winperf"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Linux Monitoring Metrics\nCPU, memory, disk, and network telemetry from InsightsMetrics for Arc-connected Linux machines.\n\n**Requires:** VM Insights or AMA performance collection enabled on the selected workspace(s)."
+            },
+            "name": "linuxperf-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let LinuxHosts = Heartbeat\n| where OSType =~ 'Linux'\n| summarize arg_max(TimeGenerated, *) by Computer\n| project Computer;\nInsightsMetrics\n| where Namespace == 'Processor' and Name == 'UtilizationPercentage'\n| join kind=inner LinuxHosts on Computer\n| summarize AvgCPU = round(avg(Val), 2) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer",
+              "size": 0,
+              "title": "Linux CPU Utilization %",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "unit": 1,
+                  "min": 0,
+                  "max": 100
+                }
+              }
+            },
+            "name": "linuxperf-cpu-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let LinuxHosts = Heartbeat\n| where OSType =~ 'Linux'\n| summarize arg_max(TimeGenerated, *) by Computer\n| project Computer;\nInsightsMetrics\n| where Namespace == 'Memory' and Name == 'AvailableMB'\n| join kind=inner LinuxHosts on Computer\n| summarize AvailableMB = round(avg(Val), 1) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer",
+              "size": 0,
+              "title": "Linux Available Memory (MB)",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "unit": 4,
+                  "min": 0
+                }
+              }
+            },
+            "name": "linuxperf-memory-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let LinuxHosts = Heartbeat\n| where OSType =~ 'Linux'\n| summarize arg_max(TimeGenerated, *) by Computer\n| project Computer;\nInsightsMetrics\n| where Namespace == 'LogicalDisk' and Name == 'FreeSpacePercentage'\n| extend MountPoint = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\n| where isnotempty(MountPoint)\n| join kind=inner LinuxHosts on Computer\n| summarize FreeSpacePct = round(avg(Val), 2) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer, MountPoint",
+              "size": 0,
+              "title": "Linux Disk Free Space %",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "unit": 1,
+                  "min": 0,
+                  "max": 100
+                }
+              }
+            },
+            "name": "linuxperf-disk-grid"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let LinuxHosts = Heartbeat\n| where OSType =~ 'Linux'\n| summarize arg_max(TimeGenerated, *) by Computer\n| project Computer;\nInsightsMetrics\n| where Namespace == 'Network' and Name in ('WriteBytesPerSecond', 'ReadBytesPerSecond')\n| join kind=inner LinuxHosts on Computer\n| summarize BytesPerSec = round(avg(Val), 2) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer, Name",
+              "size": 0,
+              "title": "Linux Network Throughput (Bytes/sec)",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "unit": 2,
+                  "min": 0
+                }
+              }
+            },
+            "name": "linuxperf-network-grid"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "linuxperf"
+      },
+      "name": "tab-linuxperf"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## SQL Host Monitoring Metrics\nHost-level CPU, memory, disk, and network from InsightsMetrics for SQL computers, plus SQL-specific counters from Perf table.\n\n**Requires:** VM Insights or AMA performance collection enabled on the selected workspace(s)."
+            },
+            "name": "sqlperf-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let SqlHosts = Perf\n| where ObjectName startswith 'SQLServer:' or ObjectName startswith 'MSSQL$'\n| summarize by Computer;\nInsightsMetrics\n| where Namespace == 'Processor' and Name == 'UtilizationPercentage'\n| join kind=inner SqlHosts on Computer\n| summarize AvgCPU = round(avg(Val), 2) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer",
+              "size": 0,
+              "title": "SQL Hosts CPU Utilization %",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "unit": 1,
+                  "min": 0,
+                  "max": 100
+                }
+              }
+            },
+            "name": "sqlperf-cpu-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let SqlHosts = Perf\n| where ObjectName startswith 'SQLServer:' or ObjectName startswith 'MSSQL$'\n| summarize by Computer;\nInsightsMetrics\n| where Namespace == 'Memory' and Name == 'AvailableMB'\n| join kind=inner SqlHosts on Computer\n| summarize AvailableMB = round(avg(Val), 1) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer",
+              "size": 0,
+              "title": "SQL Hosts Available Memory (MB)",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "unit": 4,
+                  "min": 0
+                }
+              }
+            },
+            "name": "sqlperf-memory-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let SqlHosts = Perf\n| where ObjectName startswith 'SQLServer:' or ObjectName startswith 'MSSQL$'\n| summarize by Computer;\nInsightsMetrics\n| where Namespace == 'LogicalDisk' and Name == 'FreeSpacePercentage'\n| extend Drive = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\n| where isnotempty(Drive)\n| join kind=inner SqlHosts on Computer\n| summarize FreeSpacePct = round(avg(Val), 2) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer, Drive",
+              "size": 0,
+              "title": "SQL Hosts Disk Free Space %",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "unit": 1,
+                  "min": 0,
+                  "max": 100
+                }
+              }
+            },
+            "name": "sqlperf-disk-grid"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let SqlHosts = Perf\n| where ObjectName startswith 'SQLServer:' or ObjectName startswith 'MSSQL$'\n| summarize by Computer;\nInsightsMetrics\n| where Namespace == 'Network' and Name in ('WriteBytesPerSecond', 'ReadBytesPerSecond')\n| join kind=inner SqlHosts on Computer\n| summarize BytesPerSec = round(avg(Val), 2) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer, Name",
+              "size": 0,
+              "title": "SQL Hosts Network Throughput (Bytes/sec)",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "unit": 2,
+                  "min": 0
+                }
+              }
+            },
+            "name": "sqlperf-network-grid"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "Perf\n| where ObjectName == 'SQLServer:SQL Statistics' or (ObjectName startswith 'MSSQL$' and ObjectName contains ':SQL Statistics')\n| where CounterName == 'Batch Requests/sec'\n| summarize BatchReqPerSec = round(avg(CounterValue), 2) by bin(TimeGenerated, {PerfTimeRange:grain}), Computer",
+              "size": 0,
+              "title": "SQL Batch Requests/sec",
+              "timeContextFromParameter": "PerfTimeRange",
+              "showExportToExcel": true,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{Workspaces}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "ySettings": {
+                  "min": 0
+                }
+              }
+            },
+            "name": "sqlperf-batch-requests-grid"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "sqlperf"
+      },
+      "name": "tab-sqlperf"
+    }
+  ],
+  "fallbackResourceIds": [
+    "Azure Monitor"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
